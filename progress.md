@@ -5,7 +5,7 @@
 ### Current state
 - vision.md created
 - api/pulsaar.proto created
-- rules.md missing
+- rules.md created
 
 ### Last commit summary
 - <commit-hash> - created initial vision and proto

@@ -2,9 +2,10 @@ syntax = "proto3";
 
 package pulsaar.v1;
 
-option go_package = "github.com/yourorg/pulsaar/api;api";
+option go_package = "github.com/VrushankPatel/pulsaar/api;api";
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
 
 message ListRequest {
   string path = 1;
