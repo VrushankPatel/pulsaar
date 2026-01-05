@@ -12,10 +12,11 @@
 - Unit tests added for path sanitization and allowlist enforcement
 - CLI `pulsaar explore` implemented with kubectl port-forward and TLS connection
 - CLI and agent binaries built
+- End-to-end CLI functionality tested with integration test
 
 
 ### Last commit summary
-- Build CLI and agent binaries
+- Add end-to-end test for CLI functionality
 
 ### Decisions log
 - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -29,7 +30,7 @@
 - Sidecar injection design pending
 
 ### Next steps
-1. Test end-to-end CLI functionality
+1. Add read file command to CLI
 
 ### Stop conditions met
 - None
