@@ -28,7 +28,7 @@
 - Audit aggregator implemented for centralized logging integration, receiving audit logs from agents and forwarding to external systems
 
 ### Last commit summary
-    - Built and pushed production Docker images for agent, CLI, and webhook components
+    - Implemented audit aggregator for centralized logging integration
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
