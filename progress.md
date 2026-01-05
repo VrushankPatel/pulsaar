@@ -21,6 +21,7 @@
 - Certificate management implemented for production mTLS (load from files via env vars, mTLS with client cert verification)
 - Mutating webhook for sidecar injection implemented with TLS and unit tests
 - Ephemeral container injection implemented for on-demand agent deployment in locked clusters
+- CLI supports apiserver proxy connection path for connecting to agent without kubectl port-forward
 
 ### Last commit summary
 - Implement ephemeral container injection for on-demand agent deployment
@@ -38,7 +39,6 @@
 - Security team adoption risk
 
 ### Next steps
-- Implement apiserver proxy connection path for CLI to connect to agent without kubectl port-forward
 - Add integration tests for production mTLS certificate loading
 - Update documentation and README with deployment instructions
 

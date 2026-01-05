@@ -41,6 +41,21 @@ func getClientset() (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(config)
 }
 
+func getProxyURL(namespace, podName string) (string, error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		kubeconfig := os.Getenv("KUBECONFIG")
+		if kubeconfig == "" {
+			kubeconfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
+		}
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+		if err != nil {
+			return "", err
+		}
+	}
+	return config.Host + "/api/v1/namespaces/" + namespace + "/pods/" + podName + "/proxy/", nil
+}
+
 func injectEphemeralContainer(podName, namespace string) error {
 	clientset, err := getClientset()
 	if err != nil {
@@ -145,6 +160,60 @@ func createTLSConfig() (*tls.Config, error) {
 	return config, nil
 }
 
+func connectToAgent(cmd *cobra.Command, pod, namespace string) (*grpc.ClientConn, func(), error) {
+	connectionMethod, _ := cmd.Flags().GetString("connection-method")
+	tlsConfig, err := createTLSConfig()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create TLS config: %v", err)
+	}
+
+	// Inject ephemeral container if needed
+	err = injectEphemeralContainer(pod, namespace)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to inject ephemeral container: %v", err)
+	}
+
+	if connectionMethod == "port-forward" {
+		// Find a free local port
+		lis, err := net.Listen("tcp", ":0")
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to find free port: %v", err)
+		}
+		localPort := lis.Addr().(*net.TCPAddr).Port
+		lis.Close()
+
+		// Start kubectl port-forward
+		kubectlCmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("%s/%s", namespace, pod), fmt.Sprintf("%d:50051", localPort))
+		err = kubectlCmd.Start()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to start kubectl port-forward: %v", err)
+		}
+
+		// Wait for port-forward to be ready
+		time.Sleep(2 * time.Second)
+
+		conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+		if err != nil {
+			kubectlCmd.Process.Kill()
+			return nil, nil, err
+		}
+
+		return conn, func() { kubectlCmd.Process.Kill() }, nil
+	} else if connectionMethod == "apiserver-proxy" {
+		proxyURL, err := getProxyURL(namespace, pod)
+		if err != nil {
+			return nil, nil, err
+		}
+		conn, err := grpc.Dial(proxyURL, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+		if err != nil {
+			return nil, nil, err
+		}
+		return conn, func() {}, nil
+	} else {
+		return nil, nil, fmt.Errorf("unknown connection method: %s", connectionMethod)
+	}
+}
+
 func main() {
 	rootCmd := &cobra.Command{
 		Use:   "pulsaar",
@@ -204,6 +273,8 @@ func main() {
 	rootCmd.AddCommand(streamCmd)
 	rootCmd.AddCommand(statCmd)
 
+	rootCmd.Flags().String("connection-method", "port-forward", "Connection method: port-forward or apiserver-proxy")
+
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
@@ -214,40 +285,11 @@ func runExplore(cmd *cobra.Command, args []string) error {
 	namespace, _ := cmd.Flags().GetString("namespace")
 	path, _ := cmd.Flags().GetString("path")
 
-	// Inject ephemeral container if needed
-	err := injectEphemeralContainer(pod, namespace)
+	conn, cleanup, err := connectToAgent(cmd, pod, namespace)
 	if err != nil {
-		return fmt.Errorf("failed to inject ephemeral container: %v", err)
+		return err
 	}
-
-	// Find a free local port
-	lis, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return fmt.Errorf("failed to find free port: %v", err)
-	}
-	localPort := lis.Addr().(*net.TCPAddr).Port
-	lis.Close()
-
-	// Start kubectl port-forward
-	kubectlCmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("%s/%s", namespace, pod), fmt.Sprintf("%d:50051", localPort))
-	err = kubectlCmd.Start()
-	if err != nil {
-		return fmt.Errorf("failed to start kubectl port-forward: %v", err)
-	}
-	defer kubectlCmd.Process.Kill()
-
-	// Wait for port-forward to be ready
-	time.Sleep(2 * time.Second)
-
-	// Connect gRPC
-	tlsConfig, err := createTLSConfig()
-	if err != nil {
-		return fmt.Errorf("failed to create TLS config: %v", err)
-	}
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
-	if err != nil {
-		return fmt.Errorf("failed to connect gRPC: %v", err)
-	}
+	defer cleanup()
 	defer conn.Close()
 
 	client := api.NewPulsaarAgentClient(conn)
@@ -272,40 +314,11 @@ func runRead(cmd *cobra.Command, args []string) error {
 	namespace, _ := cmd.Flags().GetString("namespace")
 	path, _ := cmd.Flags().GetString("path")
 
-	// Inject ephemeral container if needed
-	err := injectEphemeralContainer(pod, namespace)
+	conn, cleanup, err := connectToAgent(cmd, pod, namespace)
 	if err != nil {
-		return fmt.Errorf("failed to inject ephemeral container: %v", err)
+		return err
 	}
-
-	// Find a free local port
-	lis, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return fmt.Errorf("failed to find free port: %v", err)
-	}
-	localPort := lis.Addr().(*net.TCPAddr).Port
-	lis.Close()
-
-	// Start kubectl port-forward
-	kubectlCmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("%s/%s", namespace, pod), fmt.Sprintf("%d:50051", localPort))
-	err = kubectlCmd.Start()
-	if err != nil {
-		return fmt.Errorf("failed to start kubectl port-forward: %v", err)
-	}
-	defer kubectlCmd.Process.Kill()
-
-	// Wait for port-forward to be ready
-	time.Sleep(2 * time.Second)
-
-	// Connect gRPC
-	tlsConfig, err := createTLSConfig()
-	if err != nil {
-		return fmt.Errorf("failed to create TLS config: %v", err)
-	}
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
-	if err != nil {
-		return fmt.Errorf("failed to connect gRPC: %v", err)
-	}
+	defer cleanup()
 	defer conn.Close()
 
 	client := api.NewPulsaarAgentClient(conn)
@@ -334,40 +347,11 @@ func runStream(cmd *cobra.Command, args []string) error {
 	path, _ := cmd.Flags().GetString("path")
 	chunkSize, _ := cmd.Flags().GetInt64("chunk-size")
 
-	// Inject ephemeral container if needed
-	err := injectEphemeralContainer(pod, namespace)
+	conn, cleanup, err := connectToAgent(cmd, pod, namespace)
 	if err != nil {
-		return fmt.Errorf("failed to inject ephemeral container: %v", err)
+		return err
 	}
-
-	// Find a free local port
-	lis, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return fmt.Errorf("failed to find free port: %v", err)
-	}
-	localPort := lis.Addr().(*net.TCPAddr).Port
-	lis.Close()
-
-	// Start kubectl port-forward
-	kubectlCmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("%s/%s", namespace, pod), fmt.Sprintf("%d:50051", localPort))
-	err = kubectlCmd.Start()
-	if err != nil {
-		return fmt.Errorf("failed to start kubectl port-forward: %v", err)
-	}
-	defer kubectlCmd.Process.Kill()
-
-	// Wait for port-forward to be ready
-	time.Sleep(2 * time.Second)
-
-	// Connect gRPC
-	tlsConfig, err := createTLSConfig()
-	if err != nil {
-		return fmt.Errorf("failed to create TLS config: %v", err)
-	}
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
-	if err != nil {
-		return fmt.Errorf("failed to connect gRPC: %v", err)
-	}
+	defer cleanup()
 	defer conn.Close()
 
 	client := api.NewPulsaarAgentClient(conn)
@@ -400,40 +384,11 @@ func runStat(cmd *cobra.Command, args []string) error {
 	namespace, _ := cmd.Flags().GetString("namespace")
 	path, _ := cmd.Flags().GetString("path")
 
-	// Inject ephemeral container if needed
-	err := injectEphemeralContainer(pod, namespace)
+	conn, cleanup, err := connectToAgent(cmd, pod, namespace)
 	if err != nil {
-		return fmt.Errorf("failed to inject ephemeral container: %v", err)
+		return err
 	}
-
-	// Find a free local port
-	lis, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return fmt.Errorf("failed to find free port: %v", err)
-	}
-	localPort := lis.Addr().(*net.TCPAddr).Port
-	lis.Close()
-
-	// Start kubectl port-forward
-	kubectlCmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("%s/%s", namespace, pod), fmt.Sprintf("%d:50051", localPort))
-	err = kubectlCmd.Start()
-	if err != nil {
-		return fmt.Errorf("failed to start kubectl port-forward: %v", err)
-	}
-	defer kubectlCmd.Process.Kill()
-
-	// Wait for port-forward to be ready
-	time.Sleep(2 * time.Second)
-
-	// Connect gRPC
-	tlsConfig, err := createTLSConfig()
-	if err != nil {
-		return fmt.Errorf("failed to create TLS config: %v", err)
-	}
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
-	if err != nil {
-		return fmt.Errorf("failed to connect gRPC: %v", err)
-	}
+	defer cleanup()
 	defer conn.Close()
 
 	client := api.NewPulsaarAgentClient(conn)
