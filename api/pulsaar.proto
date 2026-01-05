@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package pulsaar.v1;
+
+option go_package = "github.com/yourorg/pulsaar/api;api";
+
+import "google/protobuf/timestamp.proto";
+
+message ListRequest {
+  string path = 1;
+  repeated string allowed_roots = 2;
+}
+
+message FileInfo {
+  string name = 1;
+  bool is_dir = 2;
+  int64 size_bytes = 3;
+  string mode = 4;
+  google.protobuf.Timestamp mtime = 5;
+}
+
+message ListResponse {
+  repeated FileInfo entries = 1;
+}
+
+message StatRequest {
+  string path = 1;
+  repeated string allowed_roots = 2;
+}
+
+message StatResponse {
+  FileInfo info = 1;
+}
+
+message ReadRequest {
+  string path = 1;
+  int64 offset = 2;
+  int64 length = 3;
+  repeated string allowed_roots = 4;
+}
+
+message ReadResponse {
+  bytes data = 1;
+  bool eof = 2;
+}
+
+message StreamRequest {
+  string path = 1;
+  int64 chunk_size = 2;
+  repeated string allowed_roots = 3;
+}
+
+message HealthResponse {
+  bool ready = 1;
+  string version = 2;
+  string status_message = 3;
+}
+
+service PulsaarAgent {
+  rpc ListDirectory(ListRequest) returns (ListResponse);
+  rpc Stat(StatRequest) returns (StatResponse);
+  rpc ReadFile(ReadRequest) returns (ReadResponse);
+  rpc StreamFile(StreamRequest) returns (stream ReadResponse);
+  rpc Health(google.protobuf.Empty) returns (HealthResponse);
+}
