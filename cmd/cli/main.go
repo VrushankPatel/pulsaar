@@ -10,14 +10,106 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 
 	api "github.com/VrushankPatel/pulsaar/api"
 )
+
+func getClientset() (*kubernetes.Clientset, error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		kubeconfig := os.Getenv("KUBECONFIG")
+		if kubeconfig == "" {
+			kubeconfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
+		}
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return kubernetes.NewForConfig(config)
+}
+
+func injectEphemeralContainer(podName, namespace string) error {
+	clientset, err := getClientset()
+	if err != nil {
+		return fmt.Errorf("failed to create k8s client: %v", err)
+	}
+
+	pod, err := clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get pod: %v", err)
+	}
+
+	// Check if already has pulsaar-agent container
+	for _, c := range pod.Spec.Containers {
+		if c.Name == "pulsaar-agent" {
+			return nil
+		}
+	}
+	for _, ec := range pod.Spec.EphemeralContainers {
+		if ec.Name == "pulsaar-agent" {
+			return nil
+		}
+	}
+
+	// Add ephemeral container
+	image := os.Getenv("PULSAAR_AGENT_IMAGE")
+	if image == "" {
+		image = "pulsaar/agent:latest"
+	}
+
+	ephemeralContainer := corev1.EphemeralContainer{
+		EphemeralContainerCommon: corev1.EphemeralContainerCommon{
+			Name:  "pulsaar-agent",
+			Image: image,
+			Ports: []corev1.ContainerPort{
+				{
+					ContainerPort: 50051,
+					Name:          "grpc",
+				},
+			},
+		},
+	}
+
+	pod.Spec.EphemeralContainers = append(pod.Spec.EphemeralContainers, ephemeralContainer)
+
+	// Patch the pod
+	_, err = clientset.CoreV1().Pods(namespace).UpdateEphemeralContainers(context.TODO(), podName, pod, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to update ephemeral containers: %v", err)
+	}
+
+	// Wait for the container to be running
+	err = wait.PollImmediate(1*time.Second, 30*time.Second, func() (bool, error) {
+		pod, err := clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		for _, status := range pod.Status.EphemeralContainerStatuses {
+			if status.Name == "pulsaar-agent" && status.State.Running != nil {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to wait for ephemeral container: %v", err)
+	}
+
+	return nil
+}
 
 func createTLSConfig() (*tls.Config, error) {
 	config := &tls.Config{
@@ -122,6 +214,12 @@ func runExplore(cmd *cobra.Command, args []string) error {
 	namespace, _ := cmd.Flags().GetString("namespace")
 	path, _ := cmd.Flags().GetString("path")
 
+	// Inject ephemeral container if needed
+	err := injectEphemeralContainer(pod, namespace)
+	if err != nil {
+		return fmt.Errorf("failed to inject ephemeral container: %v", err)
+	}
+
 	// Find a free local port
 	lis, err := net.Listen("tcp", ":0")
 	if err != nil {
@@ -173,6 +271,12 @@ func runRead(cmd *cobra.Command, args []string) error {
 	pod, _ := cmd.Flags().GetString("pod")
 	namespace, _ := cmd.Flags().GetString("namespace")
 	path, _ := cmd.Flags().GetString("path")
+
+	// Inject ephemeral container if needed
+	err := injectEphemeralContainer(pod, namespace)
+	if err != nil {
+		return fmt.Errorf("failed to inject ephemeral container: %v", err)
+	}
 
 	// Find a free local port
 	lis, err := net.Listen("tcp", ":0")
@@ -229,6 +333,12 @@ func runStream(cmd *cobra.Command, args []string) error {
 	namespace, _ := cmd.Flags().GetString("namespace")
 	path, _ := cmd.Flags().GetString("path")
 	chunkSize, _ := cmd.Flags().GetInt64("chunk-size")
+
+	// Inject ephemeral container if needed
+	err := injectEphemeralContainer(pod, namespace)
+	if err != nil {
+		return fmt.Errorf("failed to inject ephemeral container: %v", err)
+	}
 
 	// Find a free local port
 	lis, err := net.Listen("tcp", ":0")
@@ -289,6 +399,12 @@ func runStat(cmd *cobra.Command, args []string) error {
 	pod, _ := cmd.Flags().GetString("pod")
 	namespace, _ := cmd.Flags().GetString("namespace")
 	path, _ := cmd.Flags().GetString("path")
+
+	// Inject ephemeral container if needed
+	err := injectEphemeralContainer(pod, namespace)
+	if err != nil {
+		return fmt.Errorf("failed to inject ephemeral container: %v", err)
+	}
 
 	// Find a free local port
 	lis, err := net.Listen("tcp", ":0")

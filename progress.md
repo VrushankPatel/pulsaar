@@ -20,9 +20,10 @@
 - Optional aggregator for audit logs implemented (HTTP POST to configurable URL via PULSAAR_AUDIT_AGGREGATOR_URL env var)
 - Certificate management implemented for production mTLS (load from files via env vars, mTLS with client cert verification)
 - Mutating webhook for sidecar injection implemented with TLS and unit tests
+- Ephemeral container injection implemented for on-demand agent deployment in locked clusters
 
 ### Last commit summary
-- Implement sidecar injection via mutating webhook
+- Implement ephemeral container injection for on-demand agent deployment
 
 ### Decisions log
 - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -38,7 +39,6 @@
 
 ### Next steps
 - Implement apiserver proxy connection path for CLI to connect to agent without kubectl port-forward
-- Implement ephemeral container injection for on-demand agent deployment in locked clusters
 - Add integration tests for production mTLS certificate loading
 - Update documentation and README with deployment instructions
 
