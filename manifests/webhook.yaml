@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pulsaar-webhook
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pulsaar-webhook
+rules:
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["mutatingwebhookconfigurations"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pulsaar-webhook
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pulsaar-webhook
+subjects:
+- kind: ServiceAccount
+  name: pulsaar-webhook
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pulsaar-webhook
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pulsaar-webhook
+  template:
+    metadata:
+      labels:
+        app: pulsaar-webhook
+    spec:
+      serviceAccountName: pulsaar-webhook
+      containers:
+      - name: webhook
+        image: pulsaar/webhook:latest  # TODO: build and push image
+        ports:
+        - containerPort: 8443
+        env:
+        - name: TLS_CERT_FILE
+          value: /etc/webhook/certs/tls.crt
+        - name: TLS_KEY_FILE
+          value: /etc/webhook/certs/tls.key
+        volumeMounts:
+        - name: webhook-certs
+          mountPath: /etc/webhook/certs
+          readOnly: true
+      volumes:
+      - name: webhook-certs
+        secret:
+          secretName: pulsaar-webhook-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pulsaar-webhook
+  namespace: default
+spec:
+  ports:
+  - port: 443
+    targetPort: 8443
+  selector:
+    app: pulsaar-webhook
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: pulsaar-webhook
+webhooks:
+- name: pulsaar-agent-injector.pulsaar.io
+  clientConfig:
+    service:
+      name: pulsaar-webhook
+      namespace: default
+      path: /mutate
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t  # TODO: replace with actual CA bundle
+  rules:
+  - operations: ["CREATE"]
+    apiGroups: [""]
+    apiVersions: ["v1"]
+    resources: ["pods"]
+  admissionReviewVersions: ["v1"]
+  sideEffects: None
+  timeoutSeconds: 5

@@ -19,9 +19,10 @@
 - Audit logs implemented for all operations (ListDirectory, ReadFile, Stat, StreamFile) to stdout
 - Optional aggregator for audit logs implemented (HTTP POST to configurable URL via PULSAAR_AUDIT_AGGREGATOR_URL env var)
 - Certificate management implemented for production mTLS (load from files via env vars, mTLS with client cert verification)
+- Mutating webhook for sidecar injection implemented with TLS and unit tests
 
 ### Last commit summary
-- Implement certificate management for production mTLS
+- Implement sidecar injection via mutating webhook
 
 ### Decisions log
 - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -37,7 +38,6 @@
 - Sidecar injection design pending
 
 ### Next steps
-- Implement sidecar injection via mutating webhook for automatic adoption in environments that reject image changes.
 
 ### Stop conditions met
 - None
