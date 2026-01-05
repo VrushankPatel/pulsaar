@@ -24,6 +24,8 @@
 - CLI supports apiserver proxy connection path for connecting to agent without kubectl port-forward
  - Integration tests added for production mTLS certificate loading
  - README updated with correct build instructions
+- CLI binary built
+- Webhook binary built
 
 ### Last commit summary
  - Update README with correct build instructions
