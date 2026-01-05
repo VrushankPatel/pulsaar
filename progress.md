@@ -23,7 +23,6 @@
 - Ephemeral container injection implemented for on-demand agent deployment in locked clusters
 - CLI supports apiserver proxy connection path for connecting to agent without kubectl port-forward
 - Integration tests added for production mTLS certificate loading
-- Documentation and README updated with deployment instructions
 
 ### Last commit summary
 - Implement ephemeral container injection for on-demand agent deployment
@@ -41,7 +40,7 @@
 - Security team adoption risk
 
 ### Next steps
-- None
+- Update README with correct build instructions
 
 ### Stop conditions met
 - None
