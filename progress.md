@@ -17,6 +17,7 @@
 - CLI supports apiserver proxy connection path for connecting to agent without kubectl port-forward
 - Test deployment on EKS, GKE, and AKS implemented with scripts/test_deployment.sh and manifests/test-deployment.yaml
 - Security team sign-off obtained for non-production use
+- Test deployment on EKS, GKE, and AKS
 
 ### Last commit summary
   - Obtain security team sign-off for non-production use
@@ -34,4 +35,3 @@
  - Security team adoption risk
 
 ### Next steps
-- Test deployment on EKS, GKE, and AKS
