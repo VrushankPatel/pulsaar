@@ -14,7 +14,7 @@
 - CLI `pulsaar read` implemented with kubectl port-forward and TLS connection
 - CLI `pulsaar stream` implemented with kubectl port-forward and TLS connection
 - CLI `pulsaar stat` implemented with kubectl port-forward and TLS connection
-- CLI and agent binaries built
+- Agent binary built
 - End-to-end CLI functionality tested with integration test
 - Audit logs implemented for all operations (ListDirectory, ReadFile, Stat, StreamFile) to stdout
 - Optional aggregator for audit logs implemented (HTTP POST to configurable URL via PULSAAR_AUDIT_AGGREGATOR_URL env var)
