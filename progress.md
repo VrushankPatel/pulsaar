@@ -16,6 +16,7 @@
 - Audit logs implemented for all operations (ListDirectory, ReadFile, Stat, StreamFile) to stdout
 - Certificate management implemented for production mTLS (load from files via env vars, mTLS with client cert verification)
 - CLI supports apiserver proxy connection path for connecting to agent without kubectl port-forward
+- RBAC enforced at control plane using TokenReview and SubjectAccessReview
 - Mutating webhook for sidecar injection implemented
 - Webhook binary built
 - Test deployment on EKS, GKE, and AKS implemented with scripts/test_deployment.sh and manifests/test-deployment.yaml
