@@ -20,6 +20,12 @@ Pulsaar provides a gRPC-based agent that runs inside pods, serving read-only fil
   - Sidecar injection via mutating webhook
   - Ephemeral container injection for on-demand access
 
+## Documentation
+
+- [API Reference](docs/API_REFERENCE.md)
+- [Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+
 ## Quick Start
 
 ### 1. Build the binaries
