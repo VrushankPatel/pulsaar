@@ -129,6 +129,45 @@ func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadR
 	return &api.ReadResponse{Data: data[:n], Eof: eof}, nil
 }
 
+func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_StreamFileServer) error {
+	if !isPathAllowed(req.Path, req.AllowedRoots) {
+		return status.Errorf(codes.PermissionDenied, "path not allowed")
+	}
+
+	chunkSize := req.ChunkSize
+	if chunkSize == 0 {
+		chunkSize = 64 * 1024 // 64KB default
+	}
+	if chunkSize > maxReadSize {
+		return status.Errorf(codes.InvalidArgument, "chunk size exceeds limit")
+	}
+
+	file, err := os.Open(req.Path)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to open file: %v", err)
+	}
+	defer file.Close()
+
+	buf := make([]byte, chunkSize)
+	for {
+		n, err := file.Read(buf)
+		if err != nil && err != io.EOF {
+			return status.Errorf(codes.Internal, "failed to read file: %v", err)
+		}
+		if n == 0 {
+			break
+		}
+		eof := err == io.EOF
+		if err := stream.Send(&api.ReadResponse{Data: buf[:n], Eof: eof}); err != nil {
+			return err
+		}
+		if eof {
+			break
+		}
+	}
+	return nil
+}
+
 func TestEndToEnd(t *testing.T) {
 	// Create temp dir
 	tempDir, err := os.MkdirTemp("", "pulsaar_test")
@@ -276,5 +315,85 @@ func TestReadEndToEnd(t *testing.T) {
 	}
 	if !resp.Eof {
 		t.Errorf("expected EOF true, got false")
+	}
+}
+
+func TestStreamEndToEnd(t *testing.T) {
+	// Create temp dir
+	tempDir, err := os.MkdirTemp("", "pulsaar_stream_test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Create a file with content larger than chunk size
+	content := "Hello, this is test content for streaming. " + strings.Repeat("More content. ", 100)
+	err = os.WriteFile(filepath.Join(tempDir, "stream.txt"), []byte(content), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Start server
+	cert, err := generateSelfSignedCert()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	creds := credentials.NewServerTLSFromCert(&cert)
+
+	lis, err := net.Listen("tcp", ":0") // free port
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lis.Close()
+
+	port := lis.Addr().(*net.TCPAddr).Port
+
+	s := grpc.NewServer(grpc.Creds(creds))
+	api.RegisterPulsaarAgentServer(s, &server{})
+
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			t.Logf("server error: %v", err)
+		}
+	}()
+	defer s.Stop()
+
+	time.Sleep(100 * time.Millisecond) // wait for server
+
+	// Connect client
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	client := api.NewPulsaarAgentClient(conn)
+
+	// Call StreamFile
+	stream, err := client.StreamFile(context.Background(), &api.StreamRequest{
+		Path:         filepath.Join(tempDir, "stream.txt"),
+		ChunkSize:    64 * 1024, // 64KB
+		AllowedRoots: []string{tempDir},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var receivedData []byte
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		receivedData = append(receivedData, resp.Data...)
+	}
+
+	// Assert
+	if string(receivedData) != content {
+		t.Errorf("expected content length %d, got %d", len(content), len(receivedData))
 	}
 }

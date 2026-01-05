@@ -8,16 +8,17 @@
 - rules.md created
 - Pulsaar agent scaffold implemented in Go with proto stubs
 - Agent serves with TLS using self-signed certificate for MVP
-- ListDirectory and ReadFile handlers implemented with path allowlist and 1MB size limits
+- ListDirectory, ReadFile, and StreamFile handlers implemented with path allowlist and 1MB size limits
 - Unit tests added for path sanitization and allowlist enforcement
 - CLI `pulsaar explore` implemented with kubectl port-forward and TLS connection
 - CLI `pulsaar read` implemented with kubectl port-forward and TLS connection
+- CLI `pulsaar stream` implemented with kubectl port-forward and TLS connection
 - CLI and agent binaries built
 - End-to-end CLI functionality tested with integration test
 
 
 ### Last commit summary
-- Add read file command to CLI
+- Add stream file command to CLI
 
 ### Decisions log
 - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -31,7 +32,6 @@
 - Sidecar injection design pending
 
 ### Next steps
-1. Add stream file command to CLI
 
 ### Stop conditions met
 - None

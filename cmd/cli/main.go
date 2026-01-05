@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os/exec"
@@ -45,8 +46,22 @@ func main() {
 	readCmd.MarkFlagRequired("pod")
 	readCmd.MarkFlagRequired("path")
 
+	streamCmd := &cobra.Command{
+		Use:   "stream",
+		Short: "Stream file contents in a pod",
+		RunE:  runStream,
+	}
+
+	streamCmd.Flags().String("pod", "", "Pod name")
+	streamCmd.Flags().String("namespace", "default", "Namespace")
+	streamCmd.Flags().String("path", "", "Path to file")
+	streamCmd.Flags().Int64("chunk-size", 64*1024, "Chunk size in bytes")
+	streamCmd.MarkFlagRequired("pod")
+	streamCmd.MarkFlagRequired("path")
+
 	rootCmd.AddCommand(exploreCmd)
 	rootCmd.AddCommand(readCmd)
+	rootCmd.AddCommand(streamCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
@@ -147,6 +162,63 @@ func runRead(cmd *cobra.Command, args []string) error {
 	fmt.Print(string(resp.Data))
 	if !resp.Eof {
 		fmt.Println("\n... (file truncated)")
+	}
+
+	return nil
+}
+
+func runStream(cmd *cobra.Command, args []string) error {
+	pod, _ := cmd.Flags().GetString("pod")
+	namespace, _ := cmd.Flags().GetString("namespace")
+	path, _ := cmd.Flags().GetString("path")
+	chunkSize, _ := cmd.Flags().GetInt64("chunk-size")
+
+	// Find a free local port
+	lis, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return fmt.Errorf("failed to find free port: %v", err)
+	}
+	localPort := lis.Addr().(*net.TCPAddr).Port
+	lis.Close()
+
+	// Start kubectl port-forward
+	kubectlCmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("%s/%s", namespace, pod), fmt.Sprintf("%d:50051", localPort))
+	err = kubectlCmd.Start()
+	if err != nil {
+		return fmt.Errorf("failed to start kubectl port-forward: %v", err)
+	}
+	defer kubectlCmd.Process.Kill()
+
+	// Wait for port-forward to be ready
+	time.Sleep(2 * time.Second)
+
+	// Connect gRPC
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
+	if err != nil {
+		return fmt.Errorf("failed to connect gRPC: %v", err)
+	}
+	defer conn.Close()
+
+	client := api.NewPulsaarAgentClient(conn)
+
+	stream, err := client.StreamFile(context.Background(), &api.StreamRequest{
+		Path:         path,
+		ChunkSize:    chunkSize,
+		AllowedRoots: []string{"/"},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to stream file: %v", err)
+	}
+
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("failed to receive stream: %v", err)
+		}
+		fmt.Print(string(resp.Data))
 	}
 
 	return nil
