@@ -35,9 +35,12 @@
 
 ### Known issues
 - Security team adoption risk
-- Sidecar injection design pending
 
 ### Next steps
+- Implement apiserver proxy connection path for CLI to connect to agent without kubectl port-forward
+- Implement ephemeral container injection for on-demand agent deployment in locked clusters
+- Add integration tests for production mTLS certificate loading
+- Update documentation and README with deployment instructions
 
 ### Stop conditions met
 - None
