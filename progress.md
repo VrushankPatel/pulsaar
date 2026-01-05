@@ -25,6 +25,7 @@
 - Helm charts created for easy Kubernetes deployment with configurable TLS, RBAC, and monitoring options
 - Production monitoring with Prometheus metrics exported from agent and webhook
 - Production Docker images built and pushed to docker.io/vrushankpatel/pulsaar-{component}:latest
+- Audit aggregator implemented for centralized logging integration, receiving audit logs from agents and forwarding to external systems
 
 ### Last commit summary
     - Built and pushed production Docker images for agent, CLI, and webhook components
@@ -55,7 +56,6 @@
   - Security team adoption risk
 
 ### Next steps
-- Set up centralized logging integration with audit logs sent to external systems
 - Create comprehensive documentation including API reference, deployment guides, and troubleshooting
 - Implement automated CI/CD pipeline for building, testing, and releasing components
 - Add security scanning and dependency vulnerability checks

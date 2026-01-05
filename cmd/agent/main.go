@@ -108,10 +108,12 @@ func isPathAllowed(path string, allowedRoots []string) bool {
 func auditLog(operation, path string) {
 	log.Printf("Audit: %s request for path: %s", operation, path)
 	if url := os.Getenv("PULSAAR_AUDIT_AGGREGATOR_URL"); url != "" {
-		data := map[string]interface{}{
+		hostname, _ := os.Hostname()
+		data := map[string]any{
 			"timestamp": time.Now().Format(time.RFC3339),
 			"operation": operation,
 			"path":      path,
+			"agent_id":  hostname,
 		}
 		jsonData, _ := json.Marshal(data)
 		http.Post(url, "application/json", bytes.NewBuffer(jsonData))
