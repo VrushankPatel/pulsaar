@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"math/big"
@@ -21,10 +22,68 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	api "github.com/VrushankPatel/pulsaar/api"
 )
+
+func loadOrGenerateCert() (tls.Certificate, error) {
+	certFile := os.Getenv("PULSAAR_TLS_CERT_FILE")
+	keyFile := os.Getenv("PULSAAR_TLS_KEY_FILE")
+
+	if certFile != "" && keyFile != "" {
+		return tls.LoadX509KeyPair(certFile, keyFile)
+	}
+
+	// Fallback to self-signed for MVP
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Organization: []string{"Pulsaar MVP"},
+		},
+		NotBefore:   time.Now(),
+		NotAfter:    time.Now().Add(time.Hour * 24 * 365),
+		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		IPAddresses: []net.IP{net.ParseIP("127.0.0.1")},
+		DNSNames:    []string{"localhost"},
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	return tls.Certificate{
+		Certificate: [][]byte{certDER},
+		PrivateKey:  priv,
+	}, nil
+}
+
+func loadCACertPool() (*x509.CertPool, error) {
+	caFile := os.Getenv("PULSAAR_TLS_CA_FILE")
+	if caFile == "" {
+		return nil, nil // No client cert verification
+	}
+
+	caCert, err := os.ReadFile(caFile)
+	if err != nil {
+		return nil, err
+	}
+
+	caCertPool := x509.NewCertPool()
+	if !caCertPool.AppendCertsFromPEM(caCert) {
+		return nil, fmt.Errorf("failed to parse CA certificate")
+	}
+
+	return caCertPool, nil
+}
 
 func generateSelfSignedCert() (tls.Certificate, error) {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -186,6 +245,14 @@ func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatRespo
 			Mode:      info.Mode().String(),
 			Mtime:     timestamppb.New(info.ModTime()),
 		},
+	}, nil
+}
+
+func (s *server) Health(ctx context.Context, req *emptypb.Empty) (*api.HealthResponse, error) {
+	return &api.HealthResponse{
+		Ready:         true,
+		Version:       "v0.1.0",
+		StatusMessage: "Agent scaffold ready",
 	}, nil
 }
 
@@ -499,5 +566,348 @@ func TestCreateTLSConfig(t *testing.T) {
 	}
 	if !config.InsecureSkipVerify {
 		t.Error("expected InsecureSkipVerify true by default")
+	}
+}
+
+func generateCACert() (tls.Certificate, *x509.Certificate, error) {
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return tls.Certificate{}, nil, err
+	}
+
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Organization: []string{"Pulsaar Test CA"},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(time.Hour * 24 * 365),
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
+	if err != nil {
+		return tls.Certificate{}, nil, err
+	}
+
+	cert, err := x509.ParseCertificate(certDER)
+	if err != nil {
+		return tls.Certificate{}, nil, err
+	}
+
+	return tls.Certificate{
+		Certificate: [][]byte{certDER},
+		PrivateKey:  priv,
+	}, cert, nil
+}
+
+func generateSignedCert(caCert *x509.Certificate, caKey interface{}, commonName string, dnsNames []string) (tls.Certificate, error) {
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(2),
+		Subject: pkix.Name{
+			Organization: []string{"Pulsaar Test"},
+			CommonName:   commonName,
+		},
+		NotBefore:   time.Now(),
+		NotAfter:    time.Now().Add(time.Hour * 24 * 365),
+		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+		DNSNames:    dnsNames,
+		IPAddresses: []net.IP{net.ParseIP("127.0.0.1")},
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, &template, caCert, &priv.PublicKey, caKey)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	return tls.Certificate{
+		Certificate: [][]byte{certDER},
+		PrivateKey:  priv,
+	}, nil
+}
+
+func TestMTLSCertificateLoading(t *testing.T) {
+	// Generate CA
+	caCert, caX509, err := generateCACert()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Generate server cert
+	serverCert, err := generateSignedCert(caX509, caCert.PrivateKey, "localhost", []string{"localhost"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Generate client cert
+	clientCert, err := generateSignedCert(caX509, caCert.PrivateKey, "client", []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create temp dir for cert files
+	tempDir, err := os.MkdirTemp("", "pulsaar_mtls_test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Write certs to files
+	caCertFile := filepath.Join(tempDir, "ca.crt")
+	caCertPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caCert.Certificate[0]})
+	err = os.WriteFile(caCertFile, caCertPEM, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serverCertFile := filepath.Join(tempDir, "server.crt")
+	serverCertPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: serverCert.Certificate[0]})
+	serverKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(serverCert.PrivateKey.(*rsa.PrivateKey))})
+	serverCertData := append(serverCertPEM, serverKeyPEM...)
+	err = os.WriteFile(serverCertFile, serverCertData, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serverKeyFile := filepath.Join(tempDir, "server.key")
+	err = os.WriteFile(serverKeyFile, serverKeyPEM, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	clientCertFile := filepath.Join(tempDir, "client.crt")
+	clientCertPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: clientCert.Certificate[0]})
+	clientKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(clientCert.PrivateKey.(*rsa.PrivateKey))})
+	clientCertData := append(clientCertPEM, clientKeyPEM...)
+	err = os.WriteFile(clientCertFile, clientCertData, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	clientKeyFile := filepath.Join(tempDir, "client.key")
+	err = os.WriteFile(clientKeyFile, clientKeyPEM, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Test agent cert loading
+	originalCertFile := os.Getenv("PULSAAR_TLS_CERT_FILE")
+	originalKeyFile := os.Getenv("PULSAAR_TLS_KEY_FILE")
+	originalCAFile := os.Getenv("PULSAAR_TLS_CA_FILE")
+	defer func() {
+		os.Setenv("PULSAAR_TLS_CERT_FILE", originalCertFile)
+		os.Setenv("PULSAAR_TLS_KEY_FILE", originalKeyFile)
+		os.Setenv("PULSAAR_TLS_CA_FILE", originalCAFile)
+	}()
+
+	os.Setenv("PULSAAR_TLS_CERT_FILE", serverCertFile)
+	os.Setenv("PULSAAR_TLS_KEY_FILE", serverKeyFile)
+	os.Setenv("PULSAAR_TLS_CA_FILE", caCertFile)
+
+	loadedCert, err := loadOrGenerateCert()
+	if err != nil {
+		t.Fatalf("failed to load cert: %v", err)
+	}
+	if len(loadedCert.Certificate) == 0 {
+		t.Error("expected loaded certificate")
+	}
+
+	caPool, err := loadCACertPool()
+	if err != nil {
+		t.Fatalf("failed to load CA pool: %v", err)
+	}
+	if caPool == nil {
+		t.Error("expected CA pool")
+	}
+
+	// Test CLI TLS config creation
+	originalClientCertFile := os.Getenv("PULSAAR_CLIENT_CERT_FILE")
+	originalClientKeyFile := os.Getenv("PULSAAR_CLIENT_KEY_FILE")
+	originalCLI_CAFile := os.Getenv("PULSAAR_CA_FILE")
+	defer func() {
+		os.Setenv("PULSAAR_CLIENT_CERT_FILE", originalClientCertFile)
+		os.Setenv("PULSAAR_CLIENT_KEY_FILE", originalClientKeyFile)
+		os.Setenv("PULSAAR_CA_FILE", originalCLI_CAFile)
+	}()
+
+	os.Setenv("PULSAAR_CLIENT_CERT_FILE", clientCertFile)
+	os.Setenv("PULSAAR_CLIENT_KEY_FILE", clientKeyFile)
+	os.Setenv("PULSAAR_CA_FILE", caCertFile)
+
+	cliConfig, err := createTLSConfig()
+	if err != nil {
+		t.Fatalf("failed to create CLI TLS config: %v", err)
+	}
+	if cliConfig.InsecureSkipVerify {
+		t.Error("expected InsecureSkipVerify false with certs")
+	}
+	if len(cliConfig.Certificates) == 0 {
+		t.Error("expected client certificates")
+	}
+	if cliConfig.RootCAs == nil {
+		t.Error("expected root CAs")
+	}
+}
+
+func TestMTLSEndToEnd(t *testing.T) {
+	// Generate CA
+	caCert, caX509, err := generateCACert()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Generate server cert
+	serverCert, err := generateSignedCert(caX509, caCert.PrivateKey, "localhost", []string{"localhost"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Generate client cert
+	clientCert, err := generateSignedCert(caX509, caCert.PrivateKey, "client", []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create temp dir for cert files
+	tempDir, err := os.MkdirTemp("", "pulsaar_mtls_e2e_test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Write certs to files
+	caCertFile := filepath.Join(tempDir, "ca.crt")
+	caCertPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caCert.Certificate[0]})
+	err = os.WriteFile(caCertFile, caCertPEM, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serverCertFile := filepath.Join(tempDir, "server.crt")
+	serverCertPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: serverCert.Certificate[0]})
+	serverKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(serverCert.PrivateKey.(*rsa.PrivateKey))})
+	serverCertData := append(serverCertPEM, serverKeyPEM...)
+	err = os.WriteFile(serverCertFile, serverCertData, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serverKeyFile := filepath.Join(tempDir, "server.key")
+	err = os.WriteFile(serverKeyFile, serverKeyPEM, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	clientCertFile := filepath.Join(tempDir, "client.crt")
+	clientCertPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: clientCert.Certificate[0]})
+	clientKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(clientCert.PrivateKey.(*rsa.PrivateKey))})
+	clientCertData := append(clientCertPEM, clientKeyPEM...)
+	err = os.WriteFile(clientCertFile, clientCertData, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	clientKeyFile := filepath.Join(tempDir, "client.key")
+	err = os.WriteFile(clientKeyFile, clientKeyPEM, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set env vars for agent
+	originalCertFile := os.Getenv("PULSAAR_TLS_CERT_FILE")
+	originalKeyFile := os.Getenv("PULSAAR_TLS_KEY_FILE")
+	originalCAFile := os.Getenv("PULSAAR_TLS_CA_FILE")
+	os.Setenv("PULSAAR_TLS_CERT_FILE", serverCertFile)
+	os.Setenv("PULSAAR_TLS_KEY_FILE", serverKeyFile)
+	os.Setenv("PULSAAR_TLS_CA_FILE", caCertFile)
+	defer func() {
+		os.Setenv("PULSAAR_TLS_CERT_FILE", originalCertFile)
+		os.Setenv("PULSAAR_TLS_KEY_FILE", originalKeyFile)
+		os.Setenv("PULSAAR_TLS_CA_FILE", originalCAFile)
+	}()
+
+	// Start server
+	lis, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lis.Close()
+
+	port := lis.Addr().(*net.TCPAddr).Port
+
+	cert, err := loadOrGenerateCert()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	caCertPool, err := loadCACertPool()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	}
+	if caCertPool != nil {
+		tlsConfig.ClientCAs = caCertPool
+		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+	}
+
+	creds := credentials.NewTLS(tlsConfig)
+
+	s := grpc.NewServer(grpc.Creds(creds))
+	api.RegisterPulsaarAgentServer(s, &server{})
+
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			t.Logf("server error: %v", err)
+		}
+	}()
+	defer s.Stop()
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Set env vars for client
+	originalClientCertFile := os.Getenv("PULSAAR_CLIENT_CERT_FILE")
+	originalClientKeyFile := os.Getenv("PULSAAR_CLIENT_KEY_FILE")
+	originalCLI_CAFile := os.Getenv("PULSAAR_CA_FILE")
+	os.Setenv("PULSAAR_CLIENT_CERT_FILE", clientCertFile)
+	os.Setenv("PULSAAR_CLIENT_KEY_FILE", clientKeyFile)
+	os.Setenv("PULSAAR_CA_FILE", caCertFile)
+	defer func() {
+		os.Setenv("PULSAAR_CLIENT_CERT_FILE", originalClientCertFile)
+		os.Setenv("PULSAAR_CLIENT_KEY_FILE", originalClientKeyFile)
+		os.Setenv("PULSAAR_CA_FILE", originalCLI_CAFile)
+	}()
+
+	cliConfig, err := createTLSConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Connect client
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithTransportCredentials(credentials.NewTLS(cliConfig)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	client := api.NewPulsaarAgentClient(conn)
+
+	// Test Health
+	resp, err := client.Health(context.Background(), &emptypb.Empty{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !resp.Ready {
+		t.Error("expected ready true")
 	}
 }
