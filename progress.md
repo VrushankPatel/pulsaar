@@ -24,7 +24,7 @@
 - CLI supports apiserver proxy connection path for connecting to agent without kubectl port-forward
 - Integration tests added for production mTLS certificate loading
 - README updated with correct build instructions
-- CLI binary built
+
 - Test deployment on EKS, GKE, and AKS implemented with scripts/test_deployment.sh and manifests/test-deployment.yaml
 - Security team sign-off obtained for non-production use
 
