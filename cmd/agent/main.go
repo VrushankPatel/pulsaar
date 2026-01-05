@@ -73,6 +73,7 @@ func isPathAllowed(path string, allowedRoots []string) bool {
 }
 
 func (s *server) ListDirectory(ctx context.Context, req *api.ListRequest) (*api.ListResponse, error) {
+	log.Printf("Audit: ListDirectory request for path: %s", req.Path)
 	if !isPathAllowed(req.Path, req.AllowedRoots) {
 		return nil, status.Errorf(codes.PermissionDenied, "path not allowed")
 	}
@@ -101,6 +102,7 @@ func (s *server) ListDirectory(ctx context.Context, req *api.ListRequest) (*api.
 }
 
 func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatResponse, error) {
+	log.Printf("Audit: Stat request for path: %s", req.Path)
 	if !isPathAllowed(req.Path, req.AllowedRoots) {
 		return nil, status.Errorf(codes.PermissionDenied, "path not allowed")
 	}

@@ -16,11 +16,11 @@
 - CLI `pulsaar stat` implemented with kubectl port-forward and TLS connection
 - CLI and agent binaries built
 - End-to-end CLI functionality tested with integration test
-- Audit logs implemented for ReadFile and StreamFile operations to stdout
+- Audit logs implemented for all operations (ListDirectory, ReadFile, Stat, StreamFile) to stdout
 
 
 ### Last commit summary
-- Implement CLI pulsaar stat command
+- Add audit logs for ListDirectory and Stat operations
 
 ### Decisions log
 - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -34,7 +34,6 @@
 - Sidecar injection design pending
 
 ### Next steps
-- Add audit logs for ListDirectory and Stat operations
 - Implement optional aggregator for audit logs
 
 ### Stop conditions met
