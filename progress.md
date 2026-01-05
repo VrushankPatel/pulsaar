@@ -22,7 +22,6 @@
 - Test deployment on EKS, GKE, and AKS implemented with scripts/test_deployment.sh and manifests/test-deployment.yaml
 - Security team sign-off obtained for non-production use
 - Production deployment planning completed
-- Production Docker images built and pushed for agent, CLI, and webhook components to docker.io/vrushankpatel/pulsaar-{component}:latest
 - Helm charts created for easy Kubernetes deployment with configurable TLS, RBAC, and monitoring options
 - Production monitoring with Prometheus metrics exported from agent and webhook
 
