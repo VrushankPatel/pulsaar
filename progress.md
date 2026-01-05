@@ -37,6 +37,7 @@
 - Sidecar injection design pending
 
 ### Next steps
+- Implement sidecar injection via mutating webhook for automatic adoption in environments that reject image changes.
 
 ### Stop conditions met
 - None
