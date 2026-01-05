@@ -59,9 +59,22 @@ func main() {
 	streamCmd.MarkFlagRequired("pod")
 	streamCmd.MarkFlagRequired("path")
 
+	statCmd := &cobra.Command{
+		Use:   "stat",
+		Short: "Get file or directory info in a pod",
+		RunE:  runStat,
+	}
+
+	statCmd.Flags().String("pod", "", "Pod name")
+	statCmd.Flags().String("namespace", "default", "Namespace")
+	statCmd.Flags().String("path", "", "Path to file or directory")
+	statCmd.MarkFlagRequired("pod")
+	statCmd.MarkFlagRequired("path")
+
 	rootCmd.AddCommand(exploreCmd)
 	rootCmd.AddCommand(readCmd)
 	rootCmd.AddCommand(streamCmd)
+	rootCmd.AddCommand(statCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
@@ -220,6 +233,56 @@ func runStream(cmd *cobra.Command, args []string) error {
 		}
 		fmt.Print(string(resp.Data))
 	}
+
+	return nil
+}
+
+func runStat(cmd *cobra.Command, args []string) error {
+	pod, _ := cmd.Flags().GetString("pod")
+	namespace, _ := cmd.Flags().GetString("namespace")
+	path, _ := cmd.Flags().GetString("path")
+
+	// Find a free local port
+	lis, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return fmt.Errorf("failed to find free port: %v", err)
+	}
+	localPort := lis.Addr().(*net.TCPAddr).Port
+	lis.Close()
+
+	// Start kubectl port-forward
+	kubectlCmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("%s/%s", namespace, pod), fmt.Sprintf("%d:50051", localPort))
+	err = kubectlCmd.Start()
+	if err != nil {
+		return fmt.Errorf("failed to start kubectl port-forward: %v", err)
+	}
+	defer kubectlCmd.Process.Kill()
+
+	// Wait for port-forward to be ready
+	time.Sleep(2 * time.Second)
+
+	// Connect gRPC
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
+	if err != nil {
+		return fmt.Errorf("failed to connect gRPC: %v", err)
+	}
+	defer conn.Close()
+
+	client := api.NewPulsaarAgentClient(conn)
+
+	resp, err := client.Stat(context.Background(), &api.StatRequest{
+		Path:         path,
+		AllowedRoots: []string{"/"},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to stat file: %v", err)
+	}
+
+	fmt.Printf("Name: %s\n", resp.Info.Name)
+	fmt.Printf("IsDir: %t\n", resp.Info.IsDir)
+	fmt.Printf("Size: %d bytes\n", resp.Info.SizeBytes)
+	fmt.Printf("Mode: %s\n", resp.Info.Mode)
+	fmt.Printf("Modified: %s\n", resp.Info.Mtime.AsTime().Format("2006-01-02 15:04:05"))
 
 	return nil
 }

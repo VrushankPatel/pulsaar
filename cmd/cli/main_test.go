@@ -168,6 +168,27 @@ func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_Stre
 	return nil
 }
 
+func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatResponse, error) {
+	if !isPathAllowed(req.Path, req.AllowedRoots) {
+		return nil, status.Errorf(codes.PermissionDenied, "path not allowed")
+	}
+
+	info, err := os.Stat(req.Path)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to stat file: %v", err)
+	}
+
+	return &api.StatResponse{
+		Info: &api.FileInfo{
+			Name:      filepath.Base(req.Path),
+			IsDir:     info.IsDir(),
+			SizeBytes: info.Size(),
+			Mode:      info.Mode().String(),
+			Mtime:     timestamppb.New(info.ModTime()),
+		},
+	}, nil
+}
+
 func TestEndToEnd(t *testing.T) {
 	// Create temp dir
 	tempDir, err := os.MkdirTemp("", "pulsaar_test")
@@ -395,5 +416,77 @@ func TestStreamEndToEnd(t *testing.T) {
 	// Assert
 	if string(receivedData) != content {
 		t.Errorf("expected content length %d, got %d", len(content), len(receivedData))
+	}
+}
+
+func TestStatEndToEnd(t *testing.T) {
+	// Create temp dir
+	tempDir, err := os.MkdirTemp("", "pulsaar_stat_test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Create a file
+	err = os.WriteFile(filepath.Join(tempDir, "stat.txt"), []byte("stat content"), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Start server
+	cert, err := generateSelfSignedCert()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	creds := credentials.NewServerTLSFromCert(&cert)
+
+	lis, err := net.Listen("tcp", ":0") // free port
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lis.Close()
+
+	port := lis.Addr().(*net.TCPAddr).Port
+
+	s := grpc.NewServer(grpc.Creds(creds))
+	api.RegisterPulsaarAgentServer(s, &server{})
+
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			t.Logf("server error: %v", err)
+		}
+	}()
+	defer s.Stop()
+
+	time.Sleep(100 * time.Millisecond) // wait for server
+
+	// Connect client
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	client := api.NewPulsaarAgentClient(conn)
+
+	// Call Stat
+	resp, err := client.Stat(context.Background(), &api.StatRequest{
+		Path:         filepath.Join(tempDir, "stat.txt"),
+		AllowedRoots: []string{tempDir},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Assert
+	if resp.Info.Name != "stat.txt" {
+		t.Errorf("expected name 'stat.txt', got %s", resp.Info.Name)
+	}
+	if resp.Info.IsDir {
+		t.Errorf("expected IsDir false, got true")
+	}
+	if resp.Info.SizeBytes != 12 {
+		t.Errorf("expected size 12, got %d", resp.Info.SizeBytes)
 	}
 }
