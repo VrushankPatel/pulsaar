@@ -18,7 +18,6 @@
 - Mutating webhook for sidecar injection implemented
 - Test deployment on EKS, GKE, and AKS implemented with scripts/test_deployment.sh and manifests/test-deployment.yaml
 - Security team sign-off obtained for non-production use
-- Test deployment on EKS, GKE, and AKS
 
 ### Last commit summary
   - Obtain security team sign-off for non-production use
