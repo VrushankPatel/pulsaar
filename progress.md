@@ -11,10 +11,11 @@
 - ListDirectory and ReadFile handlers implemented with path allowlist and 1MB size limits
 - Unit tests added for path sanitization and allowlist enforcement
 - CLI `pulsaar explore` implemented with kubectl port-forward and TLS connection
+- CLI and agent binaries built
 
 
 ### Last commit summary
-- Create CLI `pulsaar explore` that uses kubectl port-forward and TLS as MVP
+- Build CLI and agent binaries
 
 ### Decisions log
 - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -28,8 +29,7 @@
 - Sidecar injection design pending
 
 ### Next steps
-1. Build CLI and agent binaries
-2. Test end-to-end CLI functionality
+1. Test end-to-end CLI functionality
 
 ### Stop conditions met
 - None
