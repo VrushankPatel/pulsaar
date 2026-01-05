@@ -20,6 +20,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -271,8 +273,19 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	s := grpc.NewServer(grpc.Creds(creds))
+	s := grpc.NewServer(
+		grpc.Creds(creds),
+		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
+		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
+	)
 	api.RegisterPulsaarAgentServer(s, &server{})
+	grpc_prometheus.Register(s)
+
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		log.Printf("Metrics server listening on :9090")
+		log.Fatal(http.ListenAndServe(":9090", nil))
+	}()
 
 	log.Printf("Pulsaar agent listening on :50051 with TLS")
 	if err := s.Serve(lis); err != nil {

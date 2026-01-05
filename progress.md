@@ -24,9 +24,10 @@
 - Production deployment planning completed
 - Production Docker images built and pushed for agent, CLI, and webhook components to docker.io/vrushankpatel/pulsaar-{component}:latest
 - Helm charts created for easy Kubernetes deployment with configurable TLS, RBAC, and monitoring options
+- Production monitoring with Prometheus metrics exported from agent and webhook
 
 ### Last commit summary
-   - Created Helm charts for easy Kubernetes deployment with configurable TLS, RBAC, and monitoring options
+    - Implemented production monitoring with Prometheus metrics exported from agent and webhook
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -54,5 +55,3 @@
   - Security team adoption risk
 
 ### Next steps
-
-- Implement production monitoring with Prometheus metrics exported from agent and webhook
