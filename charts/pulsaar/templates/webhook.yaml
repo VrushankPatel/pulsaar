@@ -1,0 +1,22 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ include "pulsaar.fullname" . }}
+  labels:
+    {{- include "pulsaar.labels" . | nindent 4 }}
+webhooks:
+- name: pulsaar-agent-injector.pulsaar.io
+  clientConfig:
+    service:
+      name: {{ include "pulsaar.fullname" . }}
+      namespace: {{ .Release.Namespace }}
+      path: /mutate
+    caBundle: {{ include "pulsaar.webhook.caBundle" . | b64enc }}
+  rules:
+  - operations: ["CREATE"]
+    apiGroups: [""]
+    apiVersions: ["v1"]
+    resources: ["pods"]
+  admissionReviewVersions: ["v1"]
+  sideEffects: None
+  timeoutSeconds: 5

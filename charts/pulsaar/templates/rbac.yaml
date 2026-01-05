@@ -1,0 +1,25 @@
+{{- if .Values.rbac.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "pulsaar.fullname" . }}
+  labels:
+    {{- include "pulsaar.labels" . | nindent 4 }}
+rules:
+{{- toYaml .Values.rbac.clusterRole.rules | nindent 0 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "pulsaar.fullname" . }}
+  labels:
+    {{- include "pulsaar.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "pulsaar.fullname" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "pulsaar.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}

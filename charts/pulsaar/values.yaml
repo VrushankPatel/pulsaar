@@ -1,0 +1,77 @@
+# Default values for pulsaar.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Webhook configuration
+webhook:
+  image:
+    repository: vrushankpatel/pulsaar-webhook
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+  rbac:
+    create: true
+  tls:
+    secretName: pulsaar-webhook-tls
+    caBundle: ""  # Base64 encoded CA bundle for webhook
+    certManager:
+      enabled: false
+      issuerRef:
+        name: letsencrypt-prod
+        kind: ClusterIssuer
+  service:
+    type: ClusterIP
+    port: 443
+    targetPort: 8443
+  podSecurityContext: {}
+    # fsGroup: 2000
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+  resources: {}
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Monitoring configuration
+monitoring:
+  enabled: false
+  prometheus:
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8443"
+      prometheus.io/path: "/metrics"
+  serviceMonitor:
+    enabled: false
+    namespace: monitoring
+    interval: 30s
+    scrapeTimeout: 10s
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# RBAC configuration
+rbac:
+  create: true
+  clusterRole:
+    rules:
+    - apiGroups: ["admissionregistration.k8s.io"]
+      resources: ["mutatingwebhookconfigurations"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

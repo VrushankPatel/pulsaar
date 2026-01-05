@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pulsaar.fullname" . }}
+  labels:
+    {{- include "pulsaar.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.webhook.service.type }}
+  ports:
+    - port: {{ .Values.webhook.service.port }}
+      targetPort: {{ .Values.webhook.service.targetPort }}
+      protocol: TCP
+      name: https
+  selector:
+    {{- include "pulsaar.selectorLabels" . | nindent 4 }}

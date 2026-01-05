@@ -1,0 +1,17 @@
+apiVersion: v2
+name: pulsaar
+description: A Helm chart for Pulsaar webhook deployment
+type: application
+version: 0.1.0
+appVersion: "v0.1.0"
+keywords:
+  - kubernetes
+  - security
+  - file-access
+  - troubleshooting
+home: https://github.com/VrushankPatel/pulsaar
+sources:
+  - https://github.com/VrushankPatel/pulsaar
+maintainers:
+  - name: Vrushank Patel
+    email: vrushank@example.com

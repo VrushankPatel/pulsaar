@@ -1,0 +1,25 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "pulsaar.fullname" . }}
+  labels:
+    {{- include "pulsaar.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "pulsaar.selectorLabels" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+  - port: https
+    path: /metrics
+    scheme: https
+    tlsConfig:
+      caFile: /etc/prometheus/secrets/pulsaar-webhook-tls/ca.crt
+      certFile: /etc/prometheus/secrets/pulsaar-webhook-tls/tls.crt
+      keyFile: /etc/prometheus/secrets/pulsaar-webhook-tls/tls.key
+    interval: {{ .Values.monitoring.serviceMonitor.interval }}
+    scrapeTimeout: {{ .Values.monitoring.serviceMonitor.scrapeTimeout }}
+{{- end }}
