@@ -25,9 +25,10 @@
 - Integration tests added for production mTLS certificate loading
 - README updated with correct build instructions
 - CLI binary built
+- Test deployment on EKS, GKE, and AKS implemented with scripts/test_deployment.sh and manifests/test-deployment.yaml
 
 ### Last commit summary
- - Update README with correct build instructions
+ - Implement test deployment script and manifests for EKS, GKE, AKS testing
 
 ### Decisions log
  - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -42,7 +43,6 @@
  - Security team adoption risk
 
 ### Next steps
-- Test deployment on EKS, GKE, and AKS
 - Obtain security team sign-off for non-production use
 
 ### Stop conditions met

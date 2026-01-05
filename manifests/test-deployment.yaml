@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-files
+  namespace: default
+data:
+  config.yaml: |
+    database:
+      host: localhost
+      port: 5432
+    logging:
+      level: info
+  log.txt: |
+    2023-01-01 10:00:00 INFO Starting application
+    2023-01-01 10:01:00 INFO Connected to database
+    2023-01-01 10:02:00 ERROR Failed to process request
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pulsaar-test-pod
+  namespace: default
+  labels:
+    app: pulsaar-test
+spec:
+  containers:
+  - name: test-app
+    image: busybox
+    command: ["sh", "-c", "sleep 3600"]
+    volumeMounts:
+    - name: test-files
+      mountPath: /app
+    - name: agent-binary
+      mountPath: /usr/local/bin
+  - name: pulsaar-agent
+    image: busybox
+    command: ["/usr/local/bin/agent"]
+    ports:
+    - containerPort: 50051
+      name: grpc
+    env:
+    - name: PULSAAR_TLS_CERT_FILE
+      value: ""  # Use self-signed for testing
+    volumeMounts:
+    - name: test-files
+      mountPath: /app
+    - name: agent-binary
+      mountPath: /usr/local/bin
+  volumes:
+  - name: test-files
+    configMap:
+      name: test-files
+  - name: agent-binary
+    hostPath:
+      path: /tmp/agent  # Assume agent binary is at /tmp/agent for testing
+      type: File
