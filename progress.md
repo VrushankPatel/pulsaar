@@ -34,6 +34,4 @@
  - Security team adoption risk
 
 ### Next steps
-
-### Stop conditions met
-- Success criteria met
+- Test deployment on EKS, GKE, and AKS
