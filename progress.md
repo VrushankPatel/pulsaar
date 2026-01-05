@@ -22,9 +22,10 @@
 - Test deployment on EKS, GKE, and AKS implemented with scripts/test_deployment.sh and manifests/test-deployment.yaml
 - Security team sign-off obtained for non-production use
 - Production deployment planning completed
+- Production Docker images built and pushed for agent, CLI, and webhook components to docker.io/vrushankpatel/pulsaar-{component}:latest
 
 ### Last commit summary
-  - Complete production deployment planning
+  - Built and pushed production Docker images for agent, CLI, and webhook components
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -34,6 +35,7 @@
   - Optional audit aggregator sends structured JSON logs via HTTP POST
   - Certificate loading via env vars PULSAAR_TLS_CERT_FILE, PULSAAR_TLS_KEY_FILE, PULSAAR_TLS_CA_FILE for agent
   - Client certs via PULSAAR_CLIENT_CERT_FILE, PULSAAR_CLIENT_KEY_FILE, PULSAAR_CA_FILE for CLI
+  - Docker images tagged as vrushankpatel/pulsaar-{component}:latest
 
 ### Production Deployment Plan
 - Build and push production Docker images for agent, CLI, and webhook components to a container registry
@@ -52,4 +54,4 @@
 
 ### Next steps
 
-- Build and push production Docker images for agent, CLI, and webhook components
+- Create Helm charts for easy Kubernetes deployment with configurable TLS, RBAC, and monitoring options
