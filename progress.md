@@ -21,22 +21,35 @@
 - Mutating webhook for sidecar injection implemented
 - Test deployment on EKS, GKE, and AKS implemented with scripts/test_deployment.sh and manifests/test-deployment.yaml
 - Security team sign-off obtained for non-production use
+- Production deployment planning completed
 
 ### Last commit summary
-  - Obtain security team sign-off for non-production use
+  - Complete production deployment planning
 
 ### Decisions log
- - Default MVP connection: kubectl port-forward or apiserver proxy
- - mTLS production requirement via cert-manager
- - Max read size set to 1MB for MVP
- - Used exec.Command for kubectl port-forward in CLI for MVP simplicity
- - Optional audit aggregator sends structured JSON logs via HTTP POST
- - Certificate loading via env vars PULSAAR_TLS_CERT_FILE, PULSAAR_TLS_KEY_FILE, PULSAAR_TLS_CA_FILE for agent
- - Client certs via PULSAAR_CLIENT_CERT_FILE, PULSAAR_CLIENT_KEY_FILE, PULSAAR_CA_FILE for CLI
+  - Default MVP connection: kubectl port-forward or apiserver proxy
+  - mTLS production requirement via cert-manager
+  - Max read size set to 1MB for MVP
+  - Used exec.Command for kubectl port-forward in CLI for MVP simplicity
+  - Optional audit aggregator sends structured JSON logs via HTTP POST
+  - Certificate loading via env vars PULSAAR_TLS_CERT_FILE, PULSAAR_TLS_KEY_FILE, PULSAAR_TLS_CA_FILE for agent
+  - Client certs via PULSAAR_CLIENT_CERT_FILE, PULSAAR_CLIENT_KEY_FILE, PULSAAR_CA_FILE for CLI
+
+### Production Deployment Plan
+- Build and push production Docker images for agent, CLI, and webhook components to a container registry
+- Create Helm charts for easy Kubernetes deployment with configurable TLS, RBAC, and monitoring options
+- Implement production monitoring with Prometheus metrics exported from agent and webhook
+- Set up centralized logging integration with audit logs sent to external systems
+- Create comprehensive documentation including API reference, deployment guides, and troubleshooting
+- Implement automated CI/CD pipeline for building, testing, and releasing components
+- Add security scanning and dependency vulnerability checks
+- Plan for high availability deployment with multiple replicas and load balancing
+- Implement backup and recovery procedures for configuration and audit data
+- Create runbooks for deployment, upgrades, and incident response
 
 ### Known issues
- - Security team adoption risk
+  - Security team adoption risk
 
 ### Next steps
 
-- Project MVP complete, ready for production deployment planning
+- Build and push production Docker images for agent, CLI, and webhook components
