@@ -490,3 +490,14 @@ func TestStatEndToEnd(t *testing.T) {
 		t.Errorf("expected size 12, got %d", resp.Info.SizeBytes)
 	}
 }
+
+func TestCreateTLSConfig(t *testing.T) {
+	// Test default config
+	config, err := createTLSConfig()
+	if err != nil {
+		t.Fatalf("failed to create config: %v", err)
+	}
+	if !config.InsecureSkipVerify {
+		t.Error("expected InsecureSkipVerify true by default")
+	}
+}

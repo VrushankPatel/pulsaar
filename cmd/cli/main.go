@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
 	"log"
 	"net"
+	"os"
 	"os/exec"
 	"time"
 
@@ -16,6 +18,40 @@ import (
 
 	api "github.com/VrushankPatel/pulsaar/api"
 )
+
+func createTLSConfig() (*tls.Config, error) {
+	config := &tls.Config{
+		InsecureSkipVerify: true, // Default for MVP port-forward
+	}
+
+	clientCertFile := os.Getenv("PULSAAR_CLIENT_CERT_FILE")
+	clientKeyFile := os.Getenv("PULSAAR_CLIENT_KEY_FILE")
+	caFile := os.Getenv("PULSAAR_CA_FILE")
+
+	if clientCertFile != "" && clientKeyFile != "" {
+		cert, err := tls.LoadX509KeyPair(clientCertFile, clientKeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load client cert: %v", err)
+		}
+		config.Certificates = []tls.Certificate{cert}
+		config.InsecureSkipVerify = false // Use proper verification if client cert provided
+	}
+
+	if caFile != "" {
+		caCert, err := os.ReadFile(caFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read CA file: %v", err)
+		}
+		caCertPool := x509.NewCertPool()
+		if !caCertPool.AppendCertsFromPEM(caCert) {
+			return nil, fmt.Errorf("failed to parse CA certificate")
+		}
+		config.RootCAs = caCertPool
+		config.InsecureSkipVerify = false
+	}
+
+	return config, nil
+}
 
 func main() {
 	rootCmd := &cobra.Command{
@@ -106,7 +142,11 @@ func runExplore(cmd *cobra.Command, args []string) error {
 	time.Sleep(2 * time.Second)
 
 	// Connect gRPC
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
+	tlsConfig, err := createTLSConfig()
+	if err != nil {
+		return fmt.Errorf("failed to create TLS config: %v", err)
+	}
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	if err != nil {
 		return fmt.Errorf("failed to connect gRPC: %v", err)
 	}
@@ -154,7 +194,11 @@ func runRead(cmd *cobra.Command, args []string) error {
 	time.Sleep(2 * time.Second)
 
 	// Connect gRPC
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
+	tlsConfig, err := createTLSConfig()
+	if err != nil {
+		return fmt.Errorf("failed to create TLS config: %v", err)
+	}
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	if err != nil {
 		return fmt.Errorf("failed to connect gRPC: %v", err)
 	}
@@ -206,7 +250,11 @@ func runStream(cmd *cobra.Command, args []string) error {
 	time.Sleep(2 * time.Second)
 
 	// Connect gRPC
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
+	tlsConfig, err := createTLSConfig()
+	if err != nil {
+		return fmt.Errorf("failed to create TLS config: %v", err)
+	}
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	if err != nil {
 		return fmt.Errorf("failed to connect gRPC: %v", err)
 	}
@@ -262,7 +310,11 @@ func runStat(cmd *cobra.Command, args []string) error {
 	time.Sleep(2 * time.Second)
 
 	// Connect gRPC
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
+	tlsConfig, err := createTLSConfig()
+	if err != nil {
+		return fmt.Errorf("failed to create TLS config: %v", err)
+	}
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	if err != nil {
 		return fmt.Errorf("failed to connect gRPC: %v", err)
 	}

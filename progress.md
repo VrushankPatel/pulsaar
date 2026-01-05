@@ -18,10 +18,10 @@
 - End-to-end CLI functionality tested with integration test
 - Audit logs implemented for all operations (ListDirectory, ReadFile, Stat, StreamFile) to stdout
 - Optional aggregator for audit logs implemented (HTTP POST to configurable URL via PULSAAR_AUDIT_AGGREGATOR_URL env var)
-
+- Certificate management implemented for production mTLS (load from files via env vars, mTLS with client cert verification)
 
 ### Last commit summary
-- Implement optional audit log aggregator
+- Implement certificate management for production mTLS
 
 ### Decisions log
 - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -29,14 +29,14 @@
 - Max read size set to 1MB for MVP
 - Used exec.Command for kubectl port-forward in CLI for MVP simplicity
 - Optional audit aggregator sends structured JSON logs via HTTP POST
+- Certificate loading via env vars PULSAAR_TLS_CERT_FILE, PULSAAR_TLS_KEY_FILE, PULSAAR_TLS_CA_FILE for agent
+- Client certs via PULSAAR_CLIENT_CERT_FILE, PULSAAR_CLIENT_KEY_FILE, PULSAAR_CA_FILE for CLI
 
 ### Known issues
 - Security team adoption risk
-- Certificate management not yet implemented
 - Sidecar injection design pending
 
 ### Next steps
-- Implement certificate management for production mTLS
 
 ### Stop conditions met
 - None

@@ -36,3 +36,25 @@ func TestAuditLog(t *testing.T) {
 	auditLog("TestOperation2", "/test/path2")
 	os.Setenv("PULSAAR_AUDIT_AGGREGATOR_URL", original)
 }
+
+func TestLoadOrGenerateCert(t *testing.T) {
+	// Test self-signed generation (no env)
+	cert, err := loadOrGenerateCert()
+	if err != nil {
+		t.Fatalf("failed to generate cert: %v", err)
+	}
+	if len(cert.Certificate) == 0 {
+		t.Error("expected certificate")
+	}
+}
+
+func TestLoadCACertPool(t *testing.T) {
+	// Test no CA file
+	pool, err := loadCACertPool()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if pool != nil {
+		t.Error("expected nil pool when no CA file")
+	}
+}

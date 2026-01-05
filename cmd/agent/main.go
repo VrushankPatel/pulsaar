@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"math/big"
@@ -35,7 +36,15 @@ type server struct {
 
 const maxReadSize int64 = 1024 * 1024 // 1MB
 
-func generateSelfSignedCert() (tls.Certificate, error) {
+func loadOrGenerateCert() (tls.Certificate, error) {
+	certFile := os.Getenv("PULSAAR_TLS_CERT_FILE")
+	keyFile := os.Getenv("PULSAAR_TLS_KEY_FILE")
+
+	if certFile != "" && keyFile != "" {
+		return tls.LoadX509KeyPair(certFile, keyFile)
+	}
+
+	// Fallback to self-signed for MVP
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return tls.Certificate{}, err
@@ -63,6 +72,25 @@ func generateSelfSignedCert() (tls.Certificate, error) {
 		Certificate: [][]byte{certDER},
 		PrivateKey:  priv,
 	}, nil
+}
+
+func loadCACertPool() (*x509.CertPool, error) {
+	caFile := os.Getenv("PULSAAR_TLS_CA_FILE")
+	if caFile == "" {
+		return nil, nil // No client cert verification
+	}
+
+	caCert, err := os.ReadFile(caFile)
+	if err != nil {
+		return nil, err
+	}
+
+	caCertPool := x509.NewCertPool()
+	if !caCertPool.AppendCertsFromPEM(caCert) {
+		return nil, fmt.Errorf("failed to parse CA certificate")
+	}
+
+	return caCertPool, nil
 }
 
 func isPathAllowed(path string, allowedRoots []string) bool {
@@ -218,12 +246,25 @@ func (s *server) Health(ctx context.Context, req *emptypb.Empty) (*api.HealthRes
 }
 
 func main() {
-	cert, err := generateSelfSignedCert()
+	cert, err := loadOrGenerateCert()
 	if err != nil {
-		log.Fatalf("failed to generate cert: %v", err)
+		log.Fatalf("failed to load or generate cert: %v", err)
 	}
 
-	creds := credentials.NewServerTLSFromCert(&cert)
+	caCertPool, err := loadCACertPool()
+	if err != nil {
+		log.Fatalf("failed to load CA cert pool: %v", err)
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	}
+	if caCertPool != nil {
+		tlsConfig.ClientCAs = caCertPool
+		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+	}
+
+	creds := credentials.NewTLS(tlsConfig)
 
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
