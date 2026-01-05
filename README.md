@@ -26,7 +26,7 @@ Pulsaar provides a gRPC-based agent that runs inside pods, serving read-only fil
 
 ```bash
 go build -o agent ./cmd/agent
-go build -o cli ./pulsaar/cli
+go build -o cli ./cmd/cli
 ```
 
 ### 2. Deploy the agent

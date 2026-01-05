@@ -22,25 +22,25 @@
 - Mutating webhook for sidecar injection implemented with TLS and unit tests
 - Ephemeral container injection implemented for on-demand agent deployment in locked clusters
 - CLI supports apiserver proxy connection path for connecting to agent without kubectl port-forward
-- Integration tests added for production mTLS certificate loading
+ - Integration tests added for production mTLS certificate loading
+ - README updated with correct build instructions
 
 ### Last commit summary
-- Implement ephemeral container injection for on-demand agent deployment
+ - Update README with correct build instructions
 
 ### Decisions log
-- Default MVP connection: kubectl port-forward or apiserver proxy
-- mTLS production requirement via cert-manager
-- Max read size set to 1MB for MVP
-- Used exec.Command for kubectl port-forward in CLI for MVP simplicity
-- Optional audit aggregator sends structured JSON logs via HTTP POST
-- Certificate loading via env vars PULSAAR_TLS_CERT_FILE, PULSAAR_TLS_KEY_FILE, PULSAAR_TLS_CA_FILE for agent
-- Client certs via PULSAAR_CLIENT_CERT_FILE, PULSAAR_CLIENT_KEY_FILE, PULSAAR_CA_FILE for CLI
+ - Default MVP connection: kubectl port-forward or apiserver proxy
+ - mTLS production requirement via cert-manager
+ - Max read size set to 1MB for MVP
+ - Used exec.Command for kubectl port-forward in CLI for MVP simplicity
+ - Optional audit aggregator sends structured JSON logs via HTTP POST
+ - Certificate loading via env vars PULSAAR_TLS_CERT_FILE, PULSAAR_TLS_KEY_FILE, PULSAAR_TLS_CA_FILE for agent
+ - Client certs via PULSAAR_CLIENT_CERT_FILE, PULSAAR_CLIENT_KEY_FILE, PULSAAR_CA_FILE for CLI
 
 ### Known issues
-- Security team adoption risk
+ - Security team adoption risk
 
 ### Next steps
-- Update README with correct build instructions
 
 ### Stop conditions met
 - None
