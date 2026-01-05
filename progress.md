@@ -25,7 +25,6 @@
  - Integration tests added for production mTLS certificate loading
  - README updated with correct build instructions
 - CLI binary built
-- Webhook binary built
 
 ### Last commit summary
  - Update README with correct build instructions
