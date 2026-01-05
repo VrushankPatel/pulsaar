@@ -9,6 +9,7 @@
 - Pulsaar agent scaffold implemented in Go with proto stubs
 - ListDirectory and ReadFile handlers implemented with path allowlist and 1MB size limits
 - Unit tests added for path sanitization and allowlist enforcement
+- Repository has uncommitted changes: deleted old proto stubs with incorrect paths (github.com/VrushankPatel/pulsaar/api/pulsaar.pb.go, github.com/yourorg/pulsaar/api/pulsaar.pb.go), added untracked files/directories: bin/, include/, protoc, protoc.zip, pulsaar/, readme.txt, scripts/validation_agent.sh
 
 ### Last commit summary
 - Implement ListDirectory and ReadFile handlers with path allowlist and size limits
