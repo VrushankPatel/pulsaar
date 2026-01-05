@@ -11,11 +11,13 @@
 - ListDirectory, ReadFile, Stat, and StreamFile handlers implemented with path allowlist and 1MB size limits
 - Unit tests added for path sanitization and allowlist enforcement
 - CLI `pulsaar explore` implemented with kubectl port-forward and TLS connection
+- CLI binary built
 - Agent binary built
 - Audit logs implemented for all operations (ListDirectory, ReadFile, Stat, StreamFile) to stdout
 - Certificate management implemented for production mTLS (load from files via env vars, mTLS with client cert verification)
 - CLI supports apiserver proxy connection path for connecting to agent without kubectl port-forward
 - Mutating webhook for sidecar injection implemented
+- Webhook binary built
 - Test deployment on EKS, GKE, and AKS implemented with scripts/test_deployment.sh and manifests/test-deployment.yaml
 - Security team sign-off obtained for non-production use
 
