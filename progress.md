@@ -42,7 +42,6 @@
  - Security team adoption risk
 
 ### Next steps
-- Implement RBAC enforcement in CLI using Kubernetes TokenReview and SubjectAccessReview APIs
 - Test deployment on EKS, GKE, and AKS
 - Obtain security team sign-off for non-production use
 

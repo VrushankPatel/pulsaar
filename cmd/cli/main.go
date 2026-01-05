@@ -16,6 +16,8 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	authenticationv1 "k8s.io/api/authentication/v1"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -26,7 +28,7 @@ import (
 	api "github.com/VrushankPatel/pulsaar/api"
 )
 
-func getClientset() (*kubernetes.Clientset, error) {
+func getConfig() (*rest.Config, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		kubeconfig := os.Getenv("KUBECONFIG")
@@ -38,22 +40,79 @@ func getClientset() (*kubernetes.Clientset, error) {
 			return nil, err
 		}
 	}
+	return config, nil
+}
+
+func getClientset() (*kubernetes.Clientset, error) {
+	config, err := getConfig()
+	if err != nil {
+		return nil, err
+	}
 	return kubernetes.NewForConfig(config)
 }
 
 func getProxyURL(namespace, podName string) (string, error) {
-	config, err := rest.InClusterConfig()
+	config, err := getConfig()
 	if err != nil {
-		kubeconfig := os.Getenv("KUBECONFIG")
-		if kubeconfig == "" {
-			kubeconfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
-		}
-		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-		if err != nil {
-			return "", err
-		}
+		return "", err
 	}
 	return config.Host + "/api/v1/namespaces/" + namespace + "/pods/" + podName + "/proxy/", nil
+}
+
+func checkUserAccess(namespace, pod string) error {
+	config, err := getConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get k8s config: %v", err)
+	}
+
+	token := config.BearerToken
+	if token == "" {
+		return fmt.Errorf("RBAC enforcement requires token-based authentication")
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return fmt.Errorf("failed to create k8s client: %v", err)
+	}
+
+	// TokenReview
+	tr := &authenticationv1.TokenReview{
+		Spec: authenticationv1.TokenReviewSpec{
+			Token: token,
+		},
+	}
+	result, err := clientset.AuthenticationV1().TokenReviews().Create(context.TODO(), tr, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to review token: %v", err)
+	}
+	if !result.Status.Authenticated {
+		return fmt.Errorf("token authentication failed")
+	}
+
+	user := result.Status.User.Username
+
+	// SubjectAccessReview
+	sar := &authorizationv1.SubjectAccessReview{
+		Spec: authorizationv1.SubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace: namespace,
+				Verb:      "get",
+				Resource:  "pods",
+				Name:      pod,
+			},
+			User:   user,
+			Groups: result.Status.User.Groups,
+		},
+	}
+	sarResult, err := clientset.AuthorizationV1().SubjectAccessReviews().Create(context.TODO(), sar, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to check access: %v", err)
+	}
+	if !sarResult.Status.Allowed {
+		return fmt.Errorf("access denied to pod %s/%s", namespace, pod)
+	}
+
+	return nil
 }
 
 func injectEphemeralContainer(podName, namespace string) error {
@@ -285,6 +344,11 @@ func runExplore(cmd *cobra.Command, args []string) error {
 	namespace, _ := cmd.Flags().GetString("namespace")
 	path, _ := cmd.Flags().GetString("path")
 
+	err := checkUserAccess(namespace, pod)
+	if err != nil {
+		return err
+	}
+
 	conn, cleanup, err := connectToAgent(cmd, pod, namespace)
 	if err != nil {
 		return err
@@ -313,6 +377,11 @@ func runRead(cmd *cobra.Command, args []string) error {
 	pod, _ := cmd.Flags().GetString("pod")
 	namespace, _ := cmd.Flags().GetString("namespace")
 	path, _ := cmd.Flags().GetString("path")
+
+	err := checkUserAccess(namespace, pod)
+	if err != nil {
+		return err
+	}
 
 	conn, cleanup, err := connectToAgent(cmd, pod, namespace)
 	if err != nil {
@@ -346,6 +415,11 @@ func runStream(cmd *cobra.Command, args []string) error {
 	namespace, _ := cmd.Flags().GetString("namespace")
 	path, _ := cmd.Flags().GetString("path")
 	chunkSize, _ := cmd.Flags().GetInt64("chunk-size")
+
+	err := checkUserAccess(namespace, pod)
+	if err != nil {
+		return err
+	}
 
 	conn, cleanup, err := connectToAgent(cmd, pod, namespace)
 	if err != nil {
@@ -383,6 +457,11 @@ func runStat(cmd *cobra.Command, args []string) error {
 	pod, _ := cmd.Flags().GetString("pod")
 	namespace, _ := cmd.Flags().GetString("namespace")
 	path, _ := cmd.Flags().GetString("path")
+
+	err := checkUserAccess(namespace, pod)
+	if err != nil {
+		return err
+	}
 
 	conn, cleanup, err := connectToAgent(cmd, pod, namespace)
 	if err != nil {
