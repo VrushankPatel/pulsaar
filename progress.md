@@ -22,8 +22,8 @@
 - Mutating webhook for sidecar injection implemented with TLS and unit tests
 - Ephemeral container injection implemented for on-demand agent deployment in locked clusters
 - CLI supports apiserver proxy connection path for connecting to agent without kubectl port-forward
- - Integration tests added for production mTLS certificate loading
- - README updated with correct build instructions
+- Integration tests added for production mTLS certificate loading
+- README updated with correct build instructions
 - CLI binary built
 
 ### Last commit summary
