@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"testing"
 )
 
@@ -23,4 +24,15 @@ func TestIsPathAllowed(t *testing.T) {
 			t.Errorf("isPathAllowed(%s, %v) = %v; want %v", tt.path, tt.allowedRoots, result, tt.expected)
 		}
 	}
+}
+
+func TestAuditLog(t *testing.T) {
+	// Test audit log without aggregator
+	auditLog("TestOperation", "/test/path")
+
+	// Test with invalid aggregator URL (should not panic)
+	original := os.Getenv("PULSAAR_AUDIT_AGGREGATOR_URL")
+	os.Setenv("PULSAAR_AUDIT_AGGREGATOR_URL", "http://invalid-url-that-will-fail")
+	auditLog("TestOperation2", "/test/path2")
+	os.Setenv("PULSAAR_AUDIT_AGGREGATOR_URL", original)
 }

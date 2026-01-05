@@ -1,16 +1,19 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"io"
 	"log"
 	"math/big"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -72,8 +75,21 @@ func isPathAllowed(path string, allowedRoots []string) bool {
 	return false
 }
 
+func auditLog(operation, path string) {
+	log.Printf("Audit: %s request for path: %s", operation, path)
+	if url := os.Getenv("PULSAAR_AUDIT_AGGREGATOR_URL"); url != "" {
+		data := map[string]interface{}{
+			"timestamp": time.Now().Format(time.RFC3339),
+			"operation": operation,
+			"path":      path,
+		}
+		jsonData, _ := json.Marshal(data)
+		http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	}
+}
+
 func (s *server) ListDirectory(ctx context.Context, req *api.ListRequest) (*api.ListResponse, error) {
-	log.Printf("Audit: ListDirectory request for path: %s", req.Path)
+	auditLog("ListDirectory", req.Path)
 	if !isPathAllowed(req.Path, req.AllowedRoots) {
 		return nil, status.Errorf(codes.PermissionDenied, "path not allowed")
 	}
@@ -102,7 +118,7 @@ func (s *server) ListDirectory(ctx context.Context, req *api.ListRequest) (*api.
 }
 
 func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatResponse, error) {
-	log.Printf("Audit: Stat request for path: %s", req.Path)
+	auditLog("Stat", req.Path)
 	if !isPathAllowed(req.Path, req.AllowedRoots) {
 		return nil, status.Errorf(codes.PermissionDenied, "path not allowed")
 	}
@@ -124,7 +140,7 @@ func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatRespo
 }
 
 func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadResponse, error) {
-	log.Printf("Audit: ReadFile request for path: %s", req.Path)
+	auditLog("ReadFile", req.Path)
 	if !isPathAllowed(req.Path, req.AllowedRoots) {
 		return nil, status.Errorf(codes.PermissionDenied, "path not allowed")
 	}
@@ -154,7 +170,7 @@ func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadR
 }
 
 func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_StreamFileServer) error {
-	log.Printf("Audit: StreamFile request for path: %s", req.Path)
+	auditLog("StreamFile", req.Path)
 	if !isPathAllowed(req.Path, req.AllowedRoots) {
 		return status.Errorf(codes.PermissionDenied, "path not allowed")
 	}
