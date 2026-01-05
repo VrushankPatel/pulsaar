@@ -11,7 +11,7 @@
 - ListDirectory and ReadFile handlers implemented with path allowlist and 1MB size limits
 - Unit tests added for path sanitization and allowlist enforcement
 - CLI `pulsaar explore` implemented with kubectl port-forward and TLS connection
-- Repository has uncommitted changes: modified cmd/agent/main.go, added cmd/cli/main.go, updated go.mod/go.sum
+
 
 ### Last commit summary
 - Create CLI `pulsaar explore` that uses kubectl port-forward and TLS as MVP
