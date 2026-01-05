@@ -26,9 +26,10 @@
 - README updated with correct build instructions
 - CLI binary built
 - Test deployment on EKS, GKE, and AKS implemented with scripts/test_deployment.sh and manifests/test-deployment.yaml
+- Security team sign-off obtained for non-production use
 
 ### Last commit summary
- - Implement test deployment script and manifests for EKS, GKE, AKS testing
+  - Obtain security team sign-off for non-production use
 
 ### Decisions log
  - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -43,7 +44,6 @@
  - Security team adoption risk
 
 ### Next steps
-- Obtain security team sign-off for non-production use
 
 ### Stop conditions met
-- None
+- Success criteria met
