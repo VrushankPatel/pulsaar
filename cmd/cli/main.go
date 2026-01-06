@@ -29,6 +29,12 @@ import (
 	api "github.com/VrushankPatel/pulsaar/api"
 )
 
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func getConfig() (*rest.Config, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {

@@ -251,7 +251,7 @@ func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatRespo
 func (s *server) Health(ctx context.Context, req *emptypb.Empty) (*api.HealthResponse, error) {
 	return &api.HealthResponse{
 		Ready:         true,
-		Version:       "v1.0.0",
+		Version:       version,
 		StatusMessage: "Agent ready",
 	}, nil
 }

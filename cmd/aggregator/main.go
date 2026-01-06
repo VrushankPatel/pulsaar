@@ -11,6 +11,12 @@ import (
 	"path/filepath"
 )
 
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 type AuditLog struct {
 	Timestamp string `json:"timestamp"`
 	Operation string `json:"operation"`

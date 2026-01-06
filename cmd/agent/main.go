@@ -38,6 +38,12 @@ import (
 	api "github.com/VrushankPatel/pulsaar/api"
 )
 
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 type server struct {
 	api.UnimplementedPulsaarAgentServer
 }
@@ -366,7 +372,7 @@ func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_Stre
 func (s *server) Health(ctx context.Context, req *emptypb.Empty) (*api.HealthResponse, error) {
 	return &api.HealthResponse{
 		Ready:         true,
-		Version:       "v1.0.0",
+		Version:       version,
 		StatusMessage: "Agent ready",
 	}, nil
 }

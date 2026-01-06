@@ -83,8 +83,8 @@ func TestHealth(t *testing.T) {
 	if !resp.Ready {
 		t.Error("expected Ready to be true")
 	}
-	if resp.Version != "v1.0.0" {
-		t.Errorf("expected Version to be v1.0.0, got %s", resp.Version)
+	if resp.Version != version {
+		t.Errorf("expected Version to be %s, got %s", version, resp.Version)
 	}
 	if resp.StatusMessage != "Agent ready" {
 		t.Errorf("expected StatusMessage to be 'Agent ready', got %s", resp.StatusMessage)

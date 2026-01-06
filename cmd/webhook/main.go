@@ -21,6 +21,9 @@ var (
 	runtimeScheme = runtime.NewScheme()
 	codecs        = serializer.NewCodecFactory(runtimeScheme)
 	deserializer  = codecs.UniversalDeserializer()
+	version       = "dev"
+	commit        = "none"
+	date          = "unknown"
 )
 
 func init() {
