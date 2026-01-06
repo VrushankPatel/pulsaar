@@ -83,17 +83,17 @@ func getProxyURL(namespace, podName string) (string, error) {
 func checkUserAccess(namespace, pod string) error {
 	config, err := getConfig()
 	if err != nil {
-		return fmt.Errorf("failed to get k8s config: %v", err)
+		return fmt.Errorf("unable to connect to Kubernetes cluster. Please check your kubeconfig or in-cluster configuration. Error: %v", err)
 	}
 
 	token := config.BearerToken
 	if token == "" {
-		return fmt.Errorf("RBAC enforcement requires token-based authentication")
+		return fmt.Errorf("RBAC enforcement requires token-based authentication. Ensure you are using a token-based auth method (e.g., not client certs)")
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return fmt.Errorf("failed to create k8s client: %v", err)
+		return fmt.Errorf("failed to create Kubernetes client. Verify your cluster connection and credentials. Error: %v", err)
 	}
 
 	// TokenReview
@@ -104,10 +104,10 @@ func checkUserAccess(namespace, pod string) error {
 	}
 	result, err := clientset.AuthenticationV1().TokenReviews().Create(context.TODO(), tr, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to review token: %v", err)
+		return fmt.Errorf("failed to validate authentication token. Check your token and cluster connectivity. Error: %v", err)
 	}
 	if !result.Status.Authenticated {
-		return fmt.Errorf("token authentication failed")
+		return fmt.Errorf("token authentication failed. Please verify your token is valid and not expired")
 	}
 
 	user := result.Status.User.Username
@@ -127,10 +127,10 @@ func checkUserAccess(namespace, pod string) error {
 	}
 	sarResult, err := clientset.AuthorizationV1().SubjectAccessReviews().Create(context.TODO(), sar, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to check access: %v", err)
+		return fmt.Errorf("failed to check RBAC permissions. Ensure you have the necessary permissions to access pods. Error: %v", err)
 	}
 	if !sarResult.Status.Allowed {
-		return fmt.Errorf("access denied to pod %s/%s", namespace, pod)
+		return fmt.Errorf("access denied to pod %s/%s. Check your RBAC permissions for 'get' verb on pods in namespace %s", namespace, pod, namespace)
 	}
 
 	return nil
@@ -246,13 +246,13 @@ func connectToAgent(cmd *cobra.Command, pod, namespace string) (*grpc.ClientConn
 	connectionMethod, _ := cmd.Flags().GetString("connection-method")
 	tlsConfig, err := createTLSConfig()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create TLS config: %v", err)
+		return nil, nil, fmt.Errorf("failed to create TLS configuration. Check your certificate files and environment variables (PULSAAR_CLIENT_CERT_FILE, PULSAAR_CLIENT_KEY_FILE, PULSAAR_CA_FILE). Error: %v", err)
 	}
 
 	// Inject ephemeral container if needed
 	err = injectEphemeralContainer(pod, namespace)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to inject ephemeral container: %v", err)
+		return nil, nil, fmt.Errorf("failed to inject Pulsaar agent into pod %s/%s. Ensure the pod supports ephemeral containers and you have permissions to update pods. Error: %v", namespace, pod, err)
 	}
 
 	switch connectionMethod {
@@ -260,18 +260,18 @@ func connectToAgent(cmd *cobra.Command, pod, namespace string) (*grpc.ClientConn
 		// Find a free local port
 		lis, err := net.Listen("tcp", ":0")
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to find free port: %v", err)
+			return nil, nil, fmt.Errorf("unable to find a free local port for port-forwarding. This may indicate too many open connections. Error: %v", err)
 		}
 		localPort := lis.Addr().(*net.TCPAddr).Port
 		if err := lis.Close(); err != nil {
-			return nil, nil, fmt.Errorf("failed to close listener: %v", err)
+			return nil, nil, fmt.Errorf("failed to close temporary listener. Error: %v", err)
 		}
 
 		// Start kubectl port-forward
 		kubectlCmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("%s/%s", namespace, pod), fmt.Sprintf("%d:50051", localPort))
 		err = kubectlCmd.Start()
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to start kubectl port-forward: %v", err)
+			return nil, nil, fmt.Errorf("failed to start kubectl port-forward. Ensure kubectl is installed, accessible, and you have permissions to port-forward to the pod. Error: %v", err)
 		}
 
 		// Wait for port-forward to be ready
@@ -280,22 +280,22 @@ func connectToAgent(cmd *cobra.Command, pod, namespace string) (*grpc.ClientConn
 		conn, err := grpc.NewClient(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 		if err != nil {
 			_ = kubectlCmd.Process.Kill()
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("failed to establish gRPC connection via port-forward. Check TLS configuration and agent availability. Error: %v", err)
 		}
 
 		return conn, func() { _ = kubectlCmd.Process.Kill() }, nil
 	case "apiserver-proxy":
 		proxyURL, err := getProxyURL(namespace, pod)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("failed to construct apiserver proxy URL. Verify cluster configuration. Error: %v", err)
 		}
 		conn, err := grpc.NewClient(proxyURL, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("failed to establish gRPC connection via apiserver proxy. Check TLS configuration and agent availability. Error: %v", err)
 		}
 		return conn, func() {}, nil
 	default:
-		return nil, nil, fmt.Errorf("unknown connection method: %s", connectionMethod)
+		return nil, nil, fmt.Errorf("unknown connection method '%s'. Supported methods: port-forward, apiserver-proxy", connectionMethod)
 	}
 }
 
@@ -500,7 +500,7 @@ func runExplore(cmd *cobra.Command, args []string) error {
 		AllowedRoots: []string{},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to list directory: %v", err)
+		return fmt.Errorf("failed to list directory '%s' in pod %s/%s. This may be due to permission restrictions, invalid path, or agent connectivity issues. Error: %v", path, namespace, pod, err)
 	}
 
 	for _, entry := range resp.Entries {
@@ -536,7 +536,7 @@ func runRead(cmd *cobra.Command, args []string) error {
 		AllowedRoots: []string{},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to read file: %v", err)
+		return fmt.Errorf("failed to read file '%s' in pod %s/%s. Check if the file exists, is within allowed paths, and you have read permissions. Error: %v", path, namespace, pod, err)
 	}
 
 	if isBinary(resp.Data) {
@@ -576,7 +576,7 @@ func runStream(cmd *cobra.Command, args []string) error {
 		AllowedRoots: []string{},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to stream file: %v", err)
+		return fmt.Errorf("failed to stream file '%s' in pod %s/%s. Ensure the file is readable and within size limits. Error: %v", path, namespace, pod, err)
 	}
 
 	warned := false
@@ -586,7 +586,7 @@ func runStream(cmd *cobra.Command, args []string) error {
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("failed to receive stream: %v", err)
+			return fmt.Errorf("error while streaming file '%s': %v", path, err)
 		}
 		if !warned && isBinary(resp.Data) {
 			fmt.Println("Warning: This file appears to be binary. Output may be corrupted.")
@@ -622,7 +622,7 @@ func runStat(cmd *cobra.Command, args []string) error {
 		AllowedRoots: []string{"/"},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to stat file: %v", err)
+		return fmt.Errorf("failed to get info for path '%s' in pod %s/%s. Verify the path exists and is accessible. Error: %v", path, namespace, pod, err)
 	}
 
 	fmt.Printf("Name: %s\n", resp.Info.Name)
