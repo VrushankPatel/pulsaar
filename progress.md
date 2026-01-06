@@ -31,11 +31,14 @@
    - Implemented backup and recovery procedures for configuration and audit data
      - Runbooks created for deployment, upgrades, and incident response
      - Security sign-off request document created
-        - Docker images built locally for agent, cli, webhook, and aggregator components
-        - CI/CD pipeline builds and pushes Docker images for agent, aggregator, cli, and webhook components
+         - Docker images built locally for agent, cli, webhook, and aggregator components
+         - CI/CD pipeline builds and pushes Docker images for agent, aggregator, cli, and webhook components
+         - Cross-platform release binaries built and published to GitHub Releases with checksums and GPG signatures on tags
+         - Release process documented in CONTRIBUTING.md
 
 ### Next steps
 - Project fully completed according to vision.md MVP scope and production deployment requirements
+- Optionally publish packages (Homebrew tap, Debian packages) and add release notes and checksums
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
