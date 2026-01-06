@@ -31,10 +31,11 @@
   - Implemented backup and recovery procedures for configuration and audit data
    - Runbooks created for deployment, upgrades, and incident response
    - Security sign-off request document created
-- Docker images built locally for agent, cli, webhook, and aggregator components
+   - Docker images built locally for agent, cli, webhook, and aggregator components
+   - Production Docker images pushed to docker.io/vrushankpatel/pulsaar-{component}:latest
 
-   ### Last commit summary
-       - Built Docker images for all components
+    ### Last commit summary
+        - Pushed production Docker images to Docker Hub
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -64,5 +65,4 @@
     - Awaiting security team sign-off for non-production use
 
 ### Next steps
-- Build and push production Docker images to docker.io/vrushankpatel/pulsaar-{component}:latest
 - Run test deployment on EKS, GKE, AKS to verify functionality
