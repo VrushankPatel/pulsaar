@@ -48,8 +48,47 @@ jobs:
           name: binaries
           path: bin/
 
-  build-images:
+  deploy-test:
     needs: build-binaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.25'
+      - name: Download binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: binaries
+          path: bin/
+      - run: chmod +x bin/*
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+      - name: Install kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/
+      - name: Install Helm
+        run: |
+          curl https://get.helm.sh/helm-v3.12.0-linux-amd64.tar.gz -o helm.tar.gz
+          tar -zxvf helm.tar.gz
+          sudo mv linux-amd64/helm /usr/local/bin/helm
+      - name: Create kind cluster
+        run: kind create cluster --name pulsaar-test
+      - name: Install Helm chart
+        run: |
+          helm install pulsaar-test ./charts/pulsaar --set agent.image.tag=latest --set aggregator.image.tag=latest --set webhook.image.tag=latest
+      - name: Wait for deployments
+        run: kubectl wait --for=condition=available --timeout=300s deployment/pulsaar-agent deployment/pulsaar-aggregator deployment/pulsaar-webhook
+      - name: Run deployment test
+        run: ./scripts/test_deployment.sh local
+
+  build-images:
+    needs: [build-binaries, deploy-test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

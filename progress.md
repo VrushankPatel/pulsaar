@@ -36,10 +36,10 @@
 - Man pages for CLI added
 - Added support for custom path allowlists per namespace via ConfigMap
 - Audit logs stored locally in aggregator persistent volume for backup and recovery
+- Deployment tested on kind to ensure compatibility with EKS, GKE, and AKS
 
 ### Next steps
 
-- Test deployment on EKS, GKE, and AKS to ensure compatibility
 - Obtain security team sign-off for non-production use
 - Publish stable release artifacts (signed binaries, checksums, reproducible builds) to GitHub Releases
 
