@@ -40,7 +40,7 @@
 - Coverage report exporting added in CI
 - Helm chart bugs fixed for proper deployment on Kubernetes clusters
 - Local deployment testing completed with kind cluster
-- Stable release artifacts publishing configured with signed binaries, checksums, reproducible builds, Debian packages, and Homebrew formulas
+- Stable release artifacts published to GitHub Releases with signed binaries, checksums, reproducible builds, Debian packages, and Homebrew formulas
 - Deploy script created for EKS, GKE, and AKS clusters with functionality verification
 
 ### Decisions log
@@ -54,4 +54,4 @@
   - Docker images tagged as vrushankpatel/pulsaar-{component}:latest
 
 ### Next steps
-- Publish stable release artifacts to GitHub Releases with signed binaries, checksums, reproducible builds, Debian packages, and Homebrew formulas
+- Project completed: stable release v1.0.0 published with all required artifacts
