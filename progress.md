@@ -41,10 +41,10 @@
 - Helm chart bugs fixed for proper deployment on Kubernetes clusters
 - Local deployment testing completed with kind cluster
 - Deploy script created for EKS, GKE, and AKS clusters with functionality verification
-- Stable release v1.0.0 published to GitHub Releases with signed binaries, checksums, reproducible builds, Debian packages, and Homebrew formulas
+- Stable release v1.0.0 tagged with signed binaries, checksums, reproducible builds, Debian packages, and Homebrew formulas ready for GitHub release
 
 ### Next steps
-- [Project complete - stable release v1.0.0 published]
+- Publish v1.0.0 release to GitHub Releases
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
