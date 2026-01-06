@@ -257,7 +257,7 @@ func auditLog(operation, path string) {
 
 func (s *server) ListDirectory(ctx context.Context, req *api.ListRequest) (*api.ListResponse, error) {
 	if !getLimiterForIP(ctx).Allow() {
-		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
+		return nil, status.Errorf(codes.ResourceExhausted, "Rate limit exceeded. Please wait before retrying.")
 	}
 	auditLog("ListDirectory", req.Path)
 	allowedRoots := req.AllowedRoots
@@ -265,12 +265,12 @@ func (s *server) ListDirectory(ctx context.Context, req *api.ListRequest) (*api.
 		allowedRoots = configuredAllowedRoots
 	}
 	if !isPathAllowed(req.Path, allowedRoots) {
-		return nil, status.Errorf(codes.PermissionDenied, "path not allowed")
+		return nil, status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed. Allowed roots: %v", req.Path, allowedRoots)
 	}
 
 	entries, err := os.ReadDir(req.Path)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to read directory: %v", err)
+		return nil, status.Errorf(codes.Internal, "Unable to list contents of directory '%s': %v", req.Path, err)
 	}
 
 	var fileInfos []*api.FileInfo
@@ -293,7 +293,7 @@ func (s *server) ListDirectory(ctx context.Context, req *api.ListRequest) (*api.
 
 func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatResponse, error) {
 	if !getLimiterForIP(ctx).Allow() {
-		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
+		return nil, status.Errorf(codes.ResourceExhausted, "Rate limit exceeded. Please wait before retrying.")
 	}
 	auditLog("Stat", req.Path)
 	allowedRoots := req.AllowedRoots
@@ -301,12 +301,12 @@ func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatRespo
 		allowedRoots = configuredAllowedRoots
 	}
 	if !isPathAllowed(req.Path, allowedRoots) {
-		return nil, status.Errorf(codes.PermissionDenied, "path not allowed")
+		return nil, status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed. Allowed roots: %v", req.Path, allowedRoots)
 	}
 
 	info, err := os.Stat(req.Path)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to stat file: %v", err)
+		return nil, status.Errorf(codes.Internal, "Unable to get information for path '%s': %v", req.Path, err)
 	}
 
 	return &api.StatResponse{
@@ -322,7 +322,7 @@ func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatRespo
 
 func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadResponse, error) {
 	if !getLimiterForIP(ctx).Allow() {
-		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
+		return nil, status.Errorf(codes.ResourceExhausted, "Rate limit exceeded. Please wait before retrying.")
 	}
 	auditLog("ReadFile", req.Path)
 	allowedRoots := req.AllowedRoots
@@ -330,7 +330,7 @@ func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadR
 		allowedRoots = configuredAllowedRoots
 	}
 	if !isPathAllowed(req.Path, allowedRoots) {
-		return nil, status.Errorf(codes.PermissionDenied, "path not allowed")
+		return nil, status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed. Allowed roots: %v", req.Path, allowedRoots)
 	}
 
 	readLen := req.Length
@@ -338,19 +338,19 @@ func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadR
 		readLen = maxReadSize
 	}
 	if readLen > maxReadSize {
-		return nil, status.Errorf(codes.InvalidArgument, "read length exceeds limit")
+		return nil, status.Errorf(codes.InvalidArgument, "Requested read length (%d bytes) exceeds the maximum allowed size of %d bytes", readLen, maxReadSize)
 	}
 
 	file, err := os.Open(req.Path)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to open file: %v", err)
+		return nil, status.Errorf(codes.Internal, "Unable to open file '%s' for reading: %v", req.Path, err)
 	}
 	defer func() { _ = file.Close() }()
 
 	data := make([]byte, readLen)
 	n, err := file.ReadAt(data, req.Offset)
 	if err != nil && err != io.EOF {
-		return nil, status.Errorf(codes.Internal, "failed to read file: %v", err)
+		return nil, status.Errorf(codes.Internal, "Unable to read file '%s': %v", req.Path, err)
 	}
 
 	eof := int64(n) < readLen || err == io.EOF
@@ -359,7 +359,7 @@ func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadR
 
 func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_StreamFileServer) error {
 	if !getLimiterForIP(stream.Context()).Allow() {
-		return status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
+		return status.Errorf(codes.ResourceExhausted, "Rate limit exceeded. Please wait before retrying.")
 	}
 	auditLog("StreamFile", req.Path)
 	allowedRoots := req.AllowedRoots
@@ -367,7 +367,7 @@ func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_Stre
 		allowedRoots = configuredAllowedRoots
 	}
 	if !isPathAllowed(req.Path, allowedRoots) {
-		return status.Errorf(codes.PermissionDenied, "path not allowed")
+		return status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed. Allowed roots: %v", req.Path, allowedRoots)
 	}
 
 	chunkSize := req.ChunkSize
@@ -375,12 +375,12 @@ func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_Stre
 		chunkSize = 64 * 1024 // 64KB default
 	}
 	if chunkSize > maxReadSize {
-		return status.Errorf(codes.InvalidArgument, "chunk size exceeds limit")
+		return status.Errorf(codes.InvalidArgument, "Requested chunk size (%d bytes) exceeds the maximum allowed size of %d bytes", chunkSize, maxReadSize)
 	}
 
 	file, err := os.Open(req.Path)
 	if err != nil {
-		return status.Errorf(codes.Internal, "failed to open file: %v", err)
+		return status.Errorf(codes.Internal, "Unable to open file '%s' for streaming: %v", req.Path, err)
 	}
 	defer func() { _ = file.Close() }()
 
@@ -388,7 +388,7 @@ func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_Stre
 	for {
 		n, err := file.Read(buf)
 		if err != nil && err != io.EOF {
-			return status.Errorf(codes.Internal, "failed to read file: %v", err)
+			return status.Errorf(codes.Internal, "Unable to read file '%s' during streaming: %v", req.Path, err)
 		}
 		if n == 0 {
 			break
