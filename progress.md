@@ -45,6 +45,7 @@
     - Post-release CI fixes applied for Go version updates and YAML syntax corrections
 
 ### Next steps
+- Update README.md to reflect Apache License 2.0 instead of TBD
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy

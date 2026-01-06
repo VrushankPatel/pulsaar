@@ -312,4 +312,4 @@ bash scripts/validate_repo.sh
 
 ## License
 
-TBD
+Licensed under Apache License 2.0
