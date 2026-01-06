@@ -26,6 +26,27 @@ Pulsaar provides a gRPC-based agent that runs inside pods, serving read-only fil
 - [Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 
+## Installation
+
+### From Packages
+
+#### Homebrew (macOS/Linux)
+
+```bash
+brew tap VrushankPatel/homebrew-pulsaar
+brew install pulsaar-cli
+```
+
+#### Debian/Ubuntu
+
+Download the .deb package from [GitHub Releases](https://github.com/VrushankPatel/pulsaar/releases) and install:
+
+```bash
+sudo dpkg -i pulsaar-cli_*.deb
+```
+
+### From Source
+
 ## Quick Start
 
 ### 1. Build the binaries

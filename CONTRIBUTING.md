@@ -56,8 +56,10 @@ To create a new release:
    - Build cross-platform binaries (Linux, macOS Intel/Apple Silicon, Windows)
    - Generate checksums and GPG signatures
    - Publish release assets to GitHub Releases
+   - Build and publish Debian packages
+   - Publish Homebrew formulas to the tap repository
 
-Note: GPG signing requires the `GPG_PRIVATE_KEY` secret to be configured in the repository settings.
+Note: GPG signing requires the `GPG_PRIVATE_KEY` secret to be configured in the repository settings. The Homebrew tap repository (VrushankPatel/homebrew-pulsaar) must exist for formula publishing.
 
 ## Security Considerations
 
