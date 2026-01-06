@@ -418,7 +418,9 @@ func main() {
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
 		log.Printf("Metrics server listening on :9090")
-		log.Fatal(http.ListenAndServe(":9090", nil))
+		if err := http.ListenAndServe(":9090", nil); err != nil {
+			log.Printf("Failed to start metrics server: %v", err)
+		}
 	}()
 
 	log.Printf("Pulsaar agent listening on :50051 with TLS")
