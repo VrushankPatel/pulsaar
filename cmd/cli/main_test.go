@@ -176,7 +176,7 @@ func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadR
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to open file: %v", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	data := make([]byte, readLen)
 	n, err := file.ReadAt(data, req.Offset)
@@ -205,7 +205,7 @@ func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_Stre
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to open file: %v", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	buf := make([]byte, chunkSize)
 	for {
@@ -286,7 +286,7 @@ func TestEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer lis.Close()
+	defer func() { _ = lis.Close() }()
 
 	port := lis.Addr().(*net.TCPAddr).Port
 
@@ -307,7 +307,7 @@ func TestEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client := api.NewPulsaarAgentClient(conn)
 
@@ -361,7 +361,7 @@ func TestReadEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer lis.Close()
+	defer func() { _ = lis.Close() }()
 
 	port := lis.Addr().(*net.TCPAddr).Port
 
@@ -382,7 +382,7 @@ func TestReadEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client := api.NewPulsaarAgentClient(conn)
 
@@ -433,7 +433,7 @@ func TestStreamEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer lis.Close()
+	defer func() { _ = lis.Close() }()
 
 	port := lis.Addr().(*net.TCPAddr).Port
 
@@ -454,7 +454,7 @@ func TestStreamEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client := api.NewPulsaarAgentClient(conn)
 
@@ -512,7 +512,7 @@ func TestStatEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer lis.Close()
+	defer func() { _ = lis.Close() }()
 
 	port := lis.Addr().(*net.TCPAddr).Port
 
@@ -533,7 +533,7 @@ func TestStatEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client := api.NewPulsaarAgentClient(conn)
 
@@ -839,7 +839,7 @@ func TestMTLSEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer lis.Close()
+	defer func() { _ = lis.Close() }()
 
 	port := lis.Addr().(*net.TCPAddr).Port
 
@@ -898,7 +898,7 @@ func TestMTLSEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client := api.NewPulsaarAgentClient(conn)
 
