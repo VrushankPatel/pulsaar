@@ -4,7 +4,7 @@ Thank you for your interest in contributing to Pulsaar! This document provides g
 
 ## Development Setup
 
-1. Ensure you have Go 1.19+ installed
+1. Ensure you have Go 1.25+ installed
 2. Clone the repository: `git clone https://github.com/VrushankPatel/pulsaar.git`
 3. Install dependencies: `go mod download`
 4. Run validation: `./scripts/validate_repo.sh`
