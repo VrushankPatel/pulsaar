@@ -723,14 +723,14 @@ func TestMTLSCertificateLoading(t *testing.T) {
 	originalKeyFile := os.Getenv("PULSAAR_TLS_KEY_FILE")
 	originalCAFile := os.Getenv("PULSAAR_TLS_CA_FILE")
 	defer func() {
-		os.Setenv("PULSAAR_TLS_CERT_FILE", originalCertFile)
-		os.Setenv("PULSAAR_TLS_KEY_FILE", originalKeyFile)
-		os.Setenv("PULSAAR_TLS_CA_FILE", originalCAFile)
+		_ = os.Setenv("PULSAAR_TLS_CERT_FILE", originalCertFile)
+		_ = os.Setenv("PULSAAR_TLS_KEY_FILE", originalKeyFile)
+		_ = os.Setenv("PULSAAR_TLS_CA_FILE", originalCAFile)
 	}()
 
-	os.Setenv("PULSAAR_TLS_CERT_FILE", serverCertFile)
-	os.Setenv("PULSAAR_TLS_KEY_FILE", serverKeyFile)
-	os.Setenv("PULSAAR_TLS_CA_FILE", caCertFile)
+	_ = os.Setenv("PULSAAR_TLS_CERT_FILE", serverCertFile)
+	_ = os.Setenv("PULSAAR_TLS_KEY_FILE", serverKeyFile)
+	_ = os.Setenv("PULSAAR_TLS_CA_FILE", caCertFile)
 
 	loadedCert, err := loadOrGenerateCert()
 	if err != nil {
@@ -753,14 +753,14 @@ func TestMTLSCertificateLoading(t *testing.T) {
 	originalClientKeyFile := os.Getenv("PULSAAR_CLIENT_KEY_FILE")
 	originalCLI_CAFile := os.Getenv("PULSAAR_CA_FILE")
 	defer func() {
-		os.Setenv("PULSAAR_CLIENT_CERT_FILE", originalClientCertFile)
-		os.Setenv("PULSAAR_CLIENT_KEY_FILE", originalClientKeyFile)
-		os.Setenv("PULSAAR_CA_FILE", originalCLI_CAFile)
+		_ = os.Setenv("PULSAAR_CLIENT_CERT_FILE", originalClientCertFile)
+		_ = os.Setenv("PULSAAR_CLIENT_KEY_FILE", originalClientKeyFile)
+		_ = os.Setenv("PULSAAR_CA_FILE", originalCLI_CAFile)
 	}()
 
-	os.Setenv("PULSAAR_CLIENT_CERT_FILE", clientCertFile)
-	os.Setenv("PULSAAR_CLIENT_KEY_FILE", clientKeyFile)
-	os.Setenv("PULSAAR_CA_FILE", caCertFile)
+	_ = os.Setenv("PULSAAR_CLIENT_CERT_FILE", clientCertFile)
+	_ = os.Setenv("PULSAAR_CLIENT_KEY_FILE", clientKeyFile)
+	_ = os.Setenv("PULSAAR_CA_FILE", caCertFile)
 
 	cliConfig, err := createTLSConfig()
 	if err != nil {
@@ -849,13 +849,13 @@ func TestMTLSEndToEnd(t *testing.T) {
 	originalCertFile := os.Getenv("PULSAAR_TLS_CERT_FILE")
 	originalKeyFile := os.Getenv("PULSAAR_TLS_KEY_FILE")
 	originalCAFile := os.Getenv("PULSAAR_TLS_CA_FILE")
-	os.Setenv("PULSAAR_TLS_CERT_FILE", serverCertFile)
-	os.Setenv("PULSAAR_TLS_KEY_FILE", serverKeyFile)
-	os.Setenv("PULSAAR_TLS_CA_FILE", caCertFile)
+	_ = os.Setenv("PULSAAR_TLS_CERT_FILE", serverCertFile)
+	_ = os.Setenv("PULSAAR_TLS_KEY_FILE", serverKeyFile)
+	_ = os.Setenv("PULSAAR_TLS_CA_FILE", caCertFile)
 	defer func() {
-		os.Setenv("PULSAAR_TLS_CERT_FILE", originalCertFile)
-		os.Setenv("PULSAAR_TLS_KEY_FILE", originalKeyFile)
-		os.Setenv("PULSAAR_TLS_CA_FILE", originalCAFile)
+		_ = os.Setenv("PULSAAR_TLS_CERT_FILE", originalCertFile)
+		_ = os.Setenv("PULSAAR_TLS_KEY_FILE", originalKeyFile)
+		_ = os.Setenv("PULSAAR_TLS_CA_FILE", originalCAFile)
 	}()
 
 	// Start server
@@ -903,13 +903,13 @@ func TestMTLSEndToEnd(t *testing.T) {
 	originalClientCertFile := os.Getenv("PULSAAR_CLIENT_CERT_FILE")
 	originalClientKeyFile := os.Getenv("PULSAAR_CLIENT_KEY_FILE")
 	originalCLI_CAFile := os.Getenv("PULSAAR_CA_FILE")
-	os.Setenv("PULSAAR_CLIENT_CERT_FILE", clientCertFile)
-	os.Setenv("PULSAAR_CLIENT_KEY_FILE", clientKeyFile)
-	os.Setenv("PULSAAR_CA_FILE", caCertFile)
+	_ = os.Setenv("PULSAAR_CLIENT_CERT_FILE", clientCertFile)
+	_ = os.Setenv("PULSAAR_CLIENT_KEY_FILE", clientKeyFile)
+	_ = os.Setenv("PULSAAR_CA_FILE", caCertFile)
 	defer func() {
-		os.Setenv("PULSAAR_CLIENT_CERT_FILE", originalClientCertFile)
-		os.Setenv("PULSAAR_CLIENT_KEY_FILE", originalClientKeyFile)
-		os.Setenv("PULSAAR_CA_FILE", originalCLI_CAFile)
+		_ = os.Setenv("PULSAAR_CLIENT_CERT_FILE", originalClientCertFile)
+		_ = os.Setenv("PULSAAR_CLIENT_KEY_FILE", originalClientKeyFile)
+		_ = os.Setenv("PULSAAR_CA_FILE", originalCLI_CAFile)
 	}()
 
 	cliConfig, err := createTLSConfig()
