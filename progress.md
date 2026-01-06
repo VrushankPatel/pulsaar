@@ -41,9 +41,9 @@
 - Cross-platform release binaries built with checksums and GPG signatures
 - Final deployment verification performed on local cluster (binaries built, validation passed)
 - Security team sign-off obtained for non production use
+- Documentation updated with release notes and final deployment verification
 
 ### Next steps
-- Update documentation with release notes and final deployment verification
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
