@@ -445,6 +445,16 @@ PowerShell:
 
 	rootCmd.AddCommand(manCmd)
 
+	versionCmd := &cobra.Command{
+		Use:   "version",
+		Short: "Print version information",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("Version: %s\nCommit: %s\nDate: %s\n", version, commit, date)
+		},
+	}
+
+	rootCmd.AddCommand(versionCmd)
+
 	rootCmd.Flags().String("connection-method", "port-forward", "Connection method: port-forward or apiserver-proxy")
 
 	if err := rootCmd.Execute(); err != nil {
