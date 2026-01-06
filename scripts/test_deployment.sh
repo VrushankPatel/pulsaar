@@ -63,12 +63,18 @@ bin/cli stat --pod pulsaar-test-pod --namespace default --path /app/log.txt --co
 echo "Testing CLI stream..."
 bin/cli stream --pod pulsaar-test-pod --namespace default --path /app/log.txt --connection-method port-forward
 
+echo "Testing CLI health..."
+bin/cli health --pod pulsaar-test-pod --namespace default --connection-method port-forward
+
 # Test with apiserver proxy if supported
 echo "Testing CLI with apiserver proxy..."
 bin/cli explore --pod pulsaar-test-pod --namespace default --path /app --connection-method apiserver-proxy
 
 echo "Testing CLI read with apiserver proxy..."
 bin/cli read --pod pulsaar-test-pod --namespace default --path /app/config.yaml --connection-method apiserver-proxy
+
+echo "Testing CLI health with apiserver proxy..."
+bin/cli health --pod pulsaar-test-pod --namespace default --connection-method apiserver-proxy
 
 # Clean up
 echo "Cleaning up test resources..."
