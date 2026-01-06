@@ -34,7 +34,7 @@ spec:
       mountPath: /usr/local/bin
   - name: pulsaar-agent
     image: busybox
-    command: ["/usr/local/bin"]
+    command: ["/usr/local/bin/agent"]
     ports:
     - containerPort: 50051
       name: grpc
@@ -45,7 +45,7 @@ spec:
     - name: test-files
       mountPath: /app
     - name: agent-binary
-      mountPath: /usr/local/bin
+      mountPath: /usr/local/bin/agent
   volumes:
   - name: test-files
     configMap:
