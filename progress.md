@@ -60,5 +60,7 @@
 - Implement backup and recovery procedures for configuration and audit data
 - Create runbooks for deployment, upgrades, and incident response
 
- ### Known issues
+  ### Known issues
    - Security team adoption risk
+
+### Next steps
