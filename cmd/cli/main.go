@@ -241,7 +241,9 @@ func connectToAgent(cmd *cobra.Command, pod, namespace string) (*grpc.ClientConn
 			return nil, nil, fmt.Errorf("failed to find free port: %v", err)
 		}
 		localPort := lis.Addr().(*net.TCPAddr).Port
-		lis.Close()
+		if err := lis.Close(); err != nil {
+			return nil, nil, fmt.Errorf("failed to close listener: %v", err)
+		}
 
 		// Start kubectl port-forward
 		kubectlCmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("%s/%s", namespace, pod), fmt.Sprintf("%d:50051", localPort))
