@@ -36,12 +36,13 @@
 - Man pages for CLI added
 - Added support for custom path allowlists per namespace via ConfigMap
 - Audit logs stored locally in aggregator persistent volume for backup and recovery
- - Deployment tested on kind to ensure compatibility with EKS, GKE, and AKS
- - Security team sign-off obtained for non-production use
- - Stable release artifacts published to GitHub Releases with signed binaries, checksums, and reproducible builds
- - Coverage report exporting added in CI
+  - Coverage report exporting added in CI
 
 ### Next steps
+
+- Test deployment on EKS, GKE, and AKS to ensure compatibility
+- Obtain security team sign-off for non-production use
+- Publish stable release artifacts to GitHub Releases with signed binaries, checksums, and reproducible builds
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
