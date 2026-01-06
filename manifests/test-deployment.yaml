@@ -30,8 +30,6 @@ spec:
     volumeMounts:
     - name: test-files
       mountPath: /app
-    - name: agent-binary
-      mountPath: /usr/local/bin
   - name: pulsaar-agent
     image: busybox
     command: ["/usr/local/bin/agent"]
