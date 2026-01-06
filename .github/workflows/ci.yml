@@ -157,7 +157,7 @@ jobs:
       - uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
-        args: release --clean
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ env.GPG_FINGERPRINT }}
