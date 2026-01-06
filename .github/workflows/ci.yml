@@ -92,7 +92,7 @@ jobs:
       - name: Import GPG key
         run: echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --import --batch
       - name: Set GPG fingerprint
-        run: echo "GPG_FINGERPRINT=$(gpg --list-keys --with-colons | awk -F: '/^pub:/ { print $5; exit }')" >> $GITHUB_ENV
+        run: 'echo "GPG_FINGERPRINT=$(gpg --list-keys --with-colons | awk -F: \"/^pub:/ { print \$5; exit }\")" >> $GITHUB_ENV'
       - uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
