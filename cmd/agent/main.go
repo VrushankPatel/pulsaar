@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/grpc-ecosystem/go-grpc-prometheus"
+	grpcPrometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
@@ -444,11 +444,11 @@ func main() {
 
 	s := grpc.NewServer(
 		grpc.Creds(creds),
-		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
-		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
+		grpc.UnaryInterceptor(grpcPrometheus.UnaryServerInterceptor),
+		grpc.StreamInterceptor(grpcPrometheus.StreamServerInterceptor),
 	)
 	api.RegisterPulsaarAgentServer(s, &server{})
-	grpc_prometheus.Register(s)
+	grpcPrometheus.Register(s)
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
