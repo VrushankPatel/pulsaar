@@ -44,16 +44,6 @@
 - Documentation updated with release notes and final deployment verification
 
 ### Next steps
-- Build and push production Docker images for agent, CLI, and webhook components to a container registry
-- Create Helm charts for easy Kubernetes deployment with configurable TLS, RBAC, and monitoring options
-- Implement production monitoring with Prometheus metrics exported from agent and webhook
-- Set up centralized logging integration with audit logs sent to external systems
-- Create comprehensive documentation including API reference, deployment guides, and troubleshooting
-- Implement automated CI/CD pipeline for building, testing, and releasing components
-- Add security scanning and dependency vulnerability checks
-- Plan for high availability deployment with multiple replicas and load balancing
-- Implement backup and recovery procedures for configuration and audit data
-- Create runbooks for deployment, upgrades, and incident response
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
