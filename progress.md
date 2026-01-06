@@ -39,9 +39,7 @@
 - Coverage report exporting added in CI
 - Helm chart bugs fixed for proper deployment on Kubernetes clusters
 - Local deployment testing completed with kind cluster
-- Security team sign-off obtained for non-production use
 - Stable release artifacts publishing configured with signed binaries, checksums, reproducible builds, Debian packages, and Homebrew formulas
-- Stable release published to GitHub Releases with signed binaries, checksums, Debian packages, RPM, and Homebrew formulas
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
