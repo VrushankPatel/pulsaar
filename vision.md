@@ -34,8 +34,10 @@ Provide a production safe, auditable, read only file exploration experience for 
 - Port-forward connection path for MVP
 - Basic path allowlist, file size and rate limits
 - Structured audit logs to stdout and optional aggregator
+- Stable release artifacts and reproducible builds — produce and publish cross-platform signed binaries (e.g., GitHub Releases) and document the release process
 
 ## Success criteria
 - Works on EKS GKE AKS
 - Security team sign off for non production
 - File reads limited, audited, and RBAC enforced
+- Stable release artifacts published (signed, checksums, reproducible builds) and documented
