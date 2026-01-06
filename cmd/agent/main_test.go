@@ -32,9 +32,13 @@ func TestAuditLog(t *testing.T) {
 
 	// Test with invalid aggregator URL (should not panic)
 	original := os.Getenv("PULSAAR_AUDIT_AGGREGATOR_URL")
-	os.Setenv("PULSAAR_AUDIT_AGGREGATOR_URL", "http://invalid-url-that-will-fail")
+	if err := os.Setenv("PULSAAR_AUDIT_AGGREGATOR_URL", "http://invalid-url-that-will-fail"); err != nil {
+		t.Fatalf("failed to set env: %v", err)
+	}
 	auditLog("TestOperation2", "/test/path2")
-	os.Setenv("PULSAAR_AUDIT_AGGREGATOR_URL", original)
+	if err := os.Setenv("PULSAAR_AUDIT_AGGREGATOR_URL", original); err != nil {
+		t.Fatalf("failed to restore env: %v", err)
+	}
 }
 
 func TestLoadOrGenerateCert(t *testing.T) {
