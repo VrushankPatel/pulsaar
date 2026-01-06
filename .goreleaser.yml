@@ -1,9 +1,5 @@
 project_name: pulsaar
 
-before:
-  hooks:
-    - go mod tidy
-
 builds:
   - id: agent
     main: ./cmd/agent
@@ -39,40 +35,40 @@ builds:
       - -X main.version={{.Version}}
       - -X main.commit={{.Commit}}
       - -X main.date={{.Date}}
-   - id: webhook
-     main: ./cmd/webhook
-     binary: pulsaar-webhook
-     env:
-       - CGO_ENABLED=0
-     goos:
-       - linux
-       - windows
-       - darwin
-     goarch:
-       - amd64
-       - arm64
-     ldflags:
-       - -s -w
-       - -X main.version={{.Version}}
-       - -X main.commit={{.Commit}}
-       - -X main.date={{.Date}}
-   - id: aggregator
-     main: ./cmd/aggregator
-     binary: pulsaar-aggregator
-     env:
-       - CGO_ENABLED=0
-     goos:
-       - linux
-       - windows
-       - darwin
-     goarch:
-       - amd64
-       - arm64
-     ldflags:
-       - -s -w
-       - -X main.version={{.Version}}
-       - -X main.commit={{.Commit}}
-       - -X main.date={{.Date}}
+  - id: webhook
+    main: ./cmd/webhook
+    binary: pulsaar-webhook
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+  - id: aggregator
+    main: ./cmd/aggregator
+    binary: pulsaar-aggregator
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
 
 archives:
   - format: tar.gz
@@ -88,89 +84,7 @@ checksum:
   name_template: 'checksums.txt'
   algorithm: sha256
 
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
-
 release:
   github:
     owner: VrushankPatel
     name: pulsaar
-
-signs:
-  - artifacts: all
-    args:
-      - --batch
-      - --local-user
-      - "{{ .Env.GPG_FINGERPRINT }}"
-      - --output
-      - "${signature}"
-      - --detach-sign
-      - "${artifact}"
-
-nfpms:
-  - id: agent
-    package_name: pulsaar-agent
-    formats: deb
-    maintainer: Vrushank Patel <vrushankpatel@example.com>
-    description: Pulsaar agent for secure read-only file access in Kubernetes
-    license: MIT
-    builds: agent
-  - id: cli
-    package_name: pulsaar-cli
-    formats: deb
-    maintainer: Vrushank Patel <vrushankpatel@example.com>
-    description: Pulsaar CLI for exploring files in Kubernetes pods securely
-    license: MIT
-    builds: cli
-  - id: webhook
-    package_name: pulsaar-webhook
-    formats: deb
-    maintainer: Vrushank Patel <vrushankpatel@example.com>
-    description: Pulsaar mutating webhook for sidecar injection
-    license: MIT
-    builds: webhook
-  - id: aggregator
-    package_name: pulsaar-aggregator
-    formats: deb
-    maintainer: Vrushank Patel <vrushankpatel@example.com>
-    description: Pulsaar audit aggregator for centralized logging
-    license: MIT
-    builds: aggregator
-
-brews:
-  - name: pulsaar-agent
-    repository:
-      owner: VrushankPatel
-      name: homebrew-pulsaar
-    commit_author:
-      name: goreleaserbot
-      email: goreleaser@carlosbecker.com
-    builds: agent
-  - name: pulsaar-cli
-    repository:
-      owner: VrushankPatel
-      name: homebrew-pulsaar
-    commit_author:
-      name: goreleaserbot
-      email: goreleaser@carlosbecker.com
-    builds: cli
-  - name: pulsaar-webhook
-    repository:
-      owner: VrushankPatel
-      name: homebrew-pulsaar
-    commit_author:
-      name: goreleaserbot
-      email: goreleaser@carlosbecker.com
-    builds: webhook
-  - name: pulsaar-aggregator
-    repository:
-      owner: VrushankPatel
-      name: homebrew-pulsaar
-    commit_author:
-      name: goreleaserbot
-      email: goreleaser@carlosbecker.com
-    builds: aggregator
