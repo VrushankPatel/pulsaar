@@ -38,7 +38,7 @@
 
 ### Next steps
 - Project fully completed according to vision.md MVP scope and production deployment requirements
-- Optionally publish packages (Homebrew tap, Debian packages) and add release notes and checksums
+- Optional packages publishing implemented: Debian packages and Homebrew tap configured in GoReleaser, release notes via changelog, checksums included
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
