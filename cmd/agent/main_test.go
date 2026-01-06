@@ -16,6 +16,7 @@ func TestIsPathAllowed(t *testing.T) {
 		{"/app/../etc/passwd", []string{"/app"}, false},
 		{"/app/sub/file.txt", []string{"/app"}, true},
 		{"/app", []string{"/app"}, true},
+		{"/appfile", []string{"/app"}, false},
 	}
 
 	for _, tt := range tests {

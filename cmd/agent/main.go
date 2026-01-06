@@ -98,7 +98,8 @@ func loadCACertPool() (*x509.CertPool, error) {
 func isPathAllowed(path string, allowedRoots []string) bool {
 	cleanPath := filepath.Clean(path)
 	for _, root := range allowedRoots {
-		if strings.HasPrefix(cleanPath, root) {
+		cleanRoot := filepath.Clean(root)
+		if cleanPath == cleanRoot || strings.HasPrefix(cleanPath, cleanRoot+"/") {
 			return true
 		}
 	}
