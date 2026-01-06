@@ -85,25 +85,25 @@ jobs:
         run: |
           curl https://get.helm.sh/helm-v3.12.0-linux-amd64.tar.gz -o helm.tar.gz
           tar -zxvf helm.tar.gz
-           sudo mv linux-amd64/helm /usr/local/bin/helm
-       - name: Create kind cluster
-         run: kind create cluster --name pulsaar-test
-       - name: Build and load images
-         run: |
-           docker build -f Dockerfile.agent -t vrushankpatel/pulsaar-agent:latest .
-           docker build -f Dockerfile.aggregator -t vrushankpatel/pulsaar-aggregator:latest .
-           docker build -f Dockerfile.webhook -t vrushankpatel/pulsaar-webhook:latest .
-           kind load docker-image vrushankpatel/pulsaar-agent:latest --name pulsaar-test
-           kind load docker-image vrushankpatel/pulsaar-aggregator:latest --name pulsaar-test
-           kind load docker-image vrushankpatel/pulsaar-webhook:latest --name pulsaar-test
-       - name: Generate TLS certificates for webhook
-         run: |
-           openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=pulsaar-webhook.default.svc"
-           kubectl create secret tls pulsaar-webhook-tls --cert=cert.pem --key=key.pem
-       - name: Install Helm chart
-         run: |
+          sudo mv linux-amd64/helm /usr/local/bin/helm
+      - name: Create kind cluster
+        run: kind create cluster --name pulsaar-test
+      - name: Build and load images
+        run: |
+          docker build -f Dockerfile.agent -t vrushankpatel/pulsaar-agent:latest .
+          docker build -f Dockerfile.aggregator -t vrushankpatel/pulsaar-aggregator:latest .
+          docker build -f Dockerfile.webhook -t vrushankpatel/pulsaar-webhook:latest .
+          kind load docker-image vrushankpatel/pulsaar-agent:latest --name pulsaar-test
+          kind load docker-image vrushankpatel/pulsaar-aggregator:latest --name pulsaar-test
+          kind load docker-image vrushankpatel/pulsaar-webhook:latest --name pulsaar-test
+      - name: Generate TLS certificates for webhook
+        run: |
+          openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=pulsaar-webhook.default.svc"
+          kubectl create secret tls pulsaar-webhook-tls --cert=cert.pem --key=key.pem
+      - name: Install Helm chart
+        run: |
 
-           helm install pulsaar-test ./charts/pulsaar --set agent.image.tag=latest --set aggregator.image.tag=latest --set webhook.image.tag=latest
+          helm install pulsaar-test ./charts/pulsaar --set agent.image.tag=latest --set aggregator.image.tag=latest --set webhook.image.tag=latest
       - name: Wait for deployments
         run: kubectl wait --for=condition=available --timeout=300s deployment/pulsaar-test-agent deployment/pulsaar-test-aggregator deployment/pulsaar-test
       - name: Run deployment test
