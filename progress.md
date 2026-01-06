@@ -40,9 +40,9 @@
 - Docker images built locally for agent, cli, webhook, and aggregator components
 - Cross-platform release binaries built with checksums and GPG signatures
 - Final deployment verification performed on local cluster (binaries built, validation passed)
+- Security team sign-off obtained for non production use
 
 ### Next steps
-- Obtain security team sign-off for non production use
 - Update documentation with release notes and final deployment verification
 
 ### Decisions log

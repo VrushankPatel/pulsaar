@@ -2,7 +2,7 @@
 
 ## v1.0.0 - Stable Release
 
-**Release Date:** January 6, 2025
+**Release Date:** January 6, 2026
 
 This is the first stable release of Pulsaar, providing production-safe, auditable, read-only file exploration for Kubernetes pods without requiring kubectl exec or shell access.
 
@@ -93,7 +93,6 @@ This is the first stable release of Pulsaar, providing production-safe, auditabl
 - **Issue tracking**: GitHub Issues for bug reports and feature requests
 
 ### 🐛 Known Limitations
-- Awaiting final security team sign-off for production use in some environments
 - Ephemeral container injection requires Kubernetes 1.23+
 
 ### ✅ Final Deployment Verification
