@@ -34,17 +34,17 @@
 - Stable release v1.0.0 tagged
 - v1.0.0 tag created and pushed
 - Testing procedure documented for EKS, GKE, and AKS clusters
-- Dependencies locked with go.sum for reproducible builds
-- Agent Health response version updated to v1.0.0
-- Webhook agent image configurable via PULSAAR_AGENT_IMAGE environment variable
-- Docker images built locally for agent, cli, webhook, and aggregator components
-- Cross-platform release binaries built with checksums and GPG signatures
+ - Dependencies locked with go.sum for reproducible builds
+ - Agent Health response version updated to v1.0.0
+ - Webhook agent image configurable via PULSAAR_AGENT_IMAGE environment variable
+ - Docker images built locally for agent, cli, webhook, and aggregator components
+ - Cross-platform release binaries built with checksums and GPG signatures
+ - Perform final deployment verification on local cluster
 
 ### Next steps
-- Perform final deployment verification on local cluster
-- Obtain security team sign-off for non production use
-- Update documentation with release notes and final deployment verification
-- Release v1.0.0
+ - Obtain security team sign-off for non production use
+ - Update documentation with release notes and final deployment verification
+ - Release v1.0.0
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
