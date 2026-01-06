@@ -40,9 +40,8 @@
 - Coverage report exporting added in CI
 - Helm chart bugs fixed for proper deployment on Kubernetes clusters
 - Local deployment testing completed with kind cluster
-- Deploy script created for EKS, GKE, and AKS clusters with functionality verification
- - Stable release v1.0.0 tagged with signed binaries, checksums, reproducible builds, Debian packages, and Homebrew formulas ready for GitHub release
- - v1.0.0 release published to GitHub Releases
+  - Deploy script created for EKS, GKE, and AKS clusters with functionality verification
+  - Stable release v1.0.0 tagged with signed binaries, checksums, reproducible builds, Debian packages, and Homebrew formulas ready for GitHub release
 
 ### Next steps
 
