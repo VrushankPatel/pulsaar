@@ -126,6 +126,15 @@ Pulsaar v1.0.0 has been successfully deployed and verified on all supported Kube
 - ✅ CLI operations (explore, read, stat, stream) functional
 - ✅ High availability deployment with multiple replicas
 
+#### Local Cluster (kind/k3s/minikube)
+- ✅ Sidecar injection via mutating webhook
+- ✅ RBAC enforcement with local service accounts
+- ✅ mTLS connections using self-signed certificates
+- ✅ Audit logging to stdout and optional aggregator
+- ✅ Path allowlists and size limits enforced
+- ✅ CLI operations (explore, read, stat, stream) functional
+- ✅ Binaries built and validation scripts passed
+
 All verification tests passed according to the documented [Testing Procedure](TESTING_PROCEDURE.md).
 
 ### 📞 Migration Notes
