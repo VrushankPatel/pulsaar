@@ -31,13 +31,12 @@
    - Implemented backup and recovery procedures for configuration and audit data
     - Runbooks created for deployment, upgrades, and incident response
     - Security sign-off request document created
-       - Docker images built locally for agent, cli, webhook, and aggregator components (aggregator image not yet included in CI/CD pipeline)
+       - Docker images built locally for agent, cli, webhook, and aggregator components
+       - CI/CD pipeline builds and pushes Docker images for agent, aggregator, cli, and webhook components
       - Security scanning and dependency vulnerability checks added to CI/CD pipeline
       - Added support for testing Pulsaar deployment on EKS, GKE, AKS clusters
 
 ### Next steps
-
-- Add aggregator image to CI/CD pipeline
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
