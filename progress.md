@@ -52,6 +52,9 @@
   - Client certs via PULSAAR_CLIENT_CERT_FILE, PULSAAR_CLIENT_KEY_FILE, PULSAAR_CA_FILE for CLI
   - Docker images tagged as vrushankpatel/pulsaar-{component}:latest
 
+### Next steps
+- None
+
 
 
 
