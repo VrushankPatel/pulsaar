@@ -40,10 +40,9 @@
 - Documentation updated with release notes and final deployment verification
 - Security team sign-off obtained for production use
 - Dependencies locked with go.sum for reproducible builds
+- Agent Health response version updated to v1.0.0
 
 ### Next steps
-
-- Update version in agent Health response to v1.0.0
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
