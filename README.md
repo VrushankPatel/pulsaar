@@ -149,9 +149,17 @@ Generate shell completion:
 # Fish
 ./cli completion fish > ~/.config/fish/completions/pulsaar.fish
 
-# PowerShell
-./cli completion powershell > pulsaar.ps1
+ # PowerShell
+ ./cli completion powershell > pulsaar.ps1
+ ```
+
+Generate man pages:
+
+```bash
+./cli man
 ```
+
+This generates man pages in the `man/` directory.
 
 ## Connection Methods
 

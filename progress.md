@@ -40,13 +40,13 @@
    - Security team sign-off obtained for non-production use (documented in docs/SECURITY_SIGNOFF_REQUEST.md)
 - Test deployment on EKS, GKE, and AKS clusters verified functionality
 - Implemented per-IP rate limiting for file operations to prevent abuse
-- Bash completion for CLI added
+ - Bash completion for CLI added
+ - Man pages for CLI added
 
 ### Next steps
 
-- Add man pages for CLI
-- Add support for custom path allowlists per namespace
-- Implement backup and recovery for audit logs
+ - Add support for custom path allowlists per namespace
+ - Implement backup and recovery for audit logs
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy

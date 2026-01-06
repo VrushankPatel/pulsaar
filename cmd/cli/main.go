@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	authenticationv1 "k8s.io/api/authentication/v1"
@@ -422,6 +423,14 @@ PowerShell:
 
 	rootCmd.AddCommand(completionCmd)
 
+	manCmd := &cobra.Command{
+		Use:   "man",
+		Short: "Generate man pages",
+		RunE:  runMan,
+	}
+
+	rootCmd.AddCommand(manCmd)
+
 	rootCmd.Flags().String("connection-method", "port-forward", "Connection method: port-forward or apiserver-proxy")
 
 	if err := rootCmd.Execute(); err != nil {
@@ -577,4 +586,16 @@ func runStat(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Modified: %s\n", resp.Info.Mtime.AsTime().Format("2006-01-02 15:04:05"))
 
 	return nil
+}
+
+func runMan(cmd *cobra.Command, args []string) error {
+	header := &doc.GenManHeader{
+		Title:   "PULSAAR",
+		Section: "1",
+	}
+	err := os.MkdirAll("man", 0755)
+	if err != nil {
+		return err
+	}
+	return doc.GenManTree(cmd.Root(), header, "man")
 }
