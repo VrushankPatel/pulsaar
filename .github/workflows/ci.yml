@@ -1,0 +1,89 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v4
+      with:
+        go-version: '1.25'
+    - run: go mod tidy
+    - run: go test ./...
+    - uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+
+  build-binaries:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v4
+      with:
+        go-version: '1.25'
+    - run: |
+        go build -o bin/agent ./cmd/agent
+        go build -o bin/cli ./cmd/cli
+        go build -o bin/webhook ./cmd/webhook
+    - uses: actions/upload-artifact@v4
+      with:
+        name: binaries
+        path: bin/
+
+  build-images:
+    needs: build-binaries
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: docker/setup-buildx-action@v3
+    - uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Extract tag
+      if: startsWith(github.ref, 'refs/tags/')
+      run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+    - run: |
+        docker build -f Dockerfile.agent -t vrushankpatel/pulsaar-agent:latest .
+        docker build -f Dockerfile.cli -t vrushankpatel/pulsaar-cli:latest .
+        docker build -f Dockerfile.webhook -t vrushankpatel/pulsaar-webhook:latest .
+        docker push vrushankpatel/pulsaar-agent:latest
+        docker push vrushankpatel/pulsaar-cli:latest
+        docker push vrushankpatel/pulsaar-webhook:latest
+        if [ -n "${{ env.TAG }}" ]; then
+          docker tag vrushankpatel/pulsaar-agent:latest vrushankpatel/pulsaar-agent:${{ env.TAG }}
+          docker tag vrushankpatel/pulsaar-cli:latest vrushankpatel/pulsaar-cli:${{ env.TAG }}
+          docker tag vrushankpatel/pulsaar-webhook:latest vrushankpatel/pulsaar-webhook:${{ env.TAG }}
+          docker push vrushankpatel/pulsaar-agent:${{ env.TAG }}
+          docker push vrushankpatel/pulsaar-cli:${{ env.TAG }}
+          docker push vrushankpatel/pulsaar-webhook:${{ env.TAG }}
+        fi
+
+  release:
+    needs: [test, build-binaries]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-go@v4
+      with:
+        go-version: '1.25'
+    - uses: goreleaser/goreleaser-action@v5
+      with:
+        version: latest
+        args: release --clean
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

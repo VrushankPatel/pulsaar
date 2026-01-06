@@ -57,7 +57,6 @@
   - Security team adoption risk
 
 ### Next steps
-- Implement automated CI/CD pipeline for building, testing, and releasing components
 - Add security scanning and dependency vulnerability checks
 - Plan for high availability deployment with multiple replicas and load balancing
 - Implement backup and recovery procedures for configuration and audit data
