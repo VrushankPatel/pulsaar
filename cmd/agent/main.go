@@ -31,6 +31,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	api "github.com/VrushankPatel/pulsaar/api"
 )
@@ -121,6 +124,15 @@ func loadCACertPool() (*x509.CertPool, error) {
 }
 
 func initConfiguredAllowedRoots() {
+	namespace := getNamespace()
+	if namespace != "" {
+		roots := loadAllowedRootsFromConfigMap(namespace)
+		if roots != nil {
+			configuredAllowedRoots = roots
+			return
+		}
+	}
+	// Fallback to env
 	roots := os.Getenv("PULSAAR_ALLOWED_ROOTS")
 	if roots == "" {
 		configuredAllowedRoots = []string{"/"}
@@ -130,6 +142,44 @@ func initConfiguredAllowedRoots() {
 			configuredAllowedRoots[i] = strings.TrimSpace(root)
 		}
 	}
+}
+
+func getNamespace() string {
+	if ns := os.Getenv("PULSAAR_NAMESPACE"); ns != "" {
+		return ns
+	}
+	data, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(data))
+}
+
+func loadAllowedRootsFromConfigMap(namespace string) []string {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil
+	}
+	cm, err := clientset.CoreV1().ConfigMaps(namespace).Get(context.TODO(), "pulsaar-config", metav1.GetOptions{})
+	if err != nil {
+		return nil
+	}
+	rootsStr, ok := cm.Data["allowed-roots"]
+	if !ok {
+		return nil
+	}
+	if rootsStr == "" {
+		return []string{}
+	}
+	roots := strings.Split(rootsStr, ",")
+	for i, root := range roots {
+		roots[i] = strings.TrimSpace(root)
+	}
+	return roots
 }
 
 func isPathAllowed(path string, allowedRoots []string) bool {

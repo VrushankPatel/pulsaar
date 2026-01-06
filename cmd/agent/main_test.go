@@ -123,3 +123,32 @@ func TestRateLimiting(t *testing.T) {
 		t.Errorf("Expected ResourceExhausted, got %v", status.Code(err))
 	}
 }
+
+func TestGetNamespace(t *testing.T) {
+	// Test with env var
+	original := os.Getenv("PULSAAR_NAMESPACE")
+	defer os.Setenv("PULSAAR_NAMESPACE", original)
+
+	os.Setenv("PULSAAR_NAMESPACE", "test-ns")
+	ns := getNamespace()
+	if ns != "test-ns" {
+		t.Errorf("expected test-ns, got %s", ns)
+	}
+
+	// Clear env, test file
+	os.Setenv("PULSAAR_NAMESPACE", "")
+	// Since we can't easily mock the file path, test that it returns "" when file not found
+	ns = getNamespace()
+	if ns != "" {
+		t.Errorf("expected empty, got %s", ns)
+	}
+}
+
+func TestLoadAllowedRootsFromConfigMap(t *testing.T) {
+	// Since this requires a k8s cluster, skip if not available
+	// In CI, it might not be, so just test that it returns nil when no cluster
+	roots := loadAllowedRootsFromConfigMap("default")
+	if roots != nil {
+		t.Errorf("expected nil when no cluster, got %v", roots)
+	}
+}

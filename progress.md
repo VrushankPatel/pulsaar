@@ -32,14 +32,14 @@
 - CI/CD pipeline builds and pushes Docker images for agent, aggregator, cli, and webhook components
 - Release process documented in CONTRIBUTING.md
 
-- Implemented per-IP rate limiting for file operations to prevent abuse
- - Bash completion for CLI added
- - Man pages for CLI added
+ - Implemented per-IP rate limiting for file operations to prevent abuse
+  - Bash completion for CLI added
+  - Man pages for CLI added
+  - Added support for custom path allowlists per namespace via ConfigMap
 
 ### Next steps
 
- - Add support for custom path allowlists per namespace
- - Implement backup and recovery for audit logs
+  - Implement backup and recovery for audit logs
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
