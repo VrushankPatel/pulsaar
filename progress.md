@@ -38,6 +38,10 @@
 
 ### Next steps
 
+- Create and publish stable release v1.0.0 with cross-platform binaries, checksums, and GPG signatures
+- Test deployment and functionality on EKS, GKE, and AKS clusters
+- Update documentation with release notes and final deployment verification
+
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
   - mTLS production requirement via cert-manager
