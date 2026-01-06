@@ -192,7 +192,7 @@ func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadR
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to open file: %v", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	data := make([]byte, readLen)
 	n, err := file.ReadAt(data, req.Offset)
