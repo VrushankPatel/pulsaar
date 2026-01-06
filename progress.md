@@ -29,21 +29,21 @@
 - Implemented backup and recovery procedures for configuration and audit data
 - Runbooks created for deployment, upgrades, and incident response
 - Security sign-off request document created
-- Docker images built locally for agent, cli, webhook, and aggregator components
 - CI/CD pipeline builds and pushes Docker images for agent, aggregator, cli, and webhook components
-- Cross-platform release binaries built with checksums and GPG signatures on tags
 - Release process documented in CONTRIBUTING.md
-- Stable release v1.0.0 tagged with cross-platform binaries, checksums, and GPG signatures
+- Stable release v1.0.0 tagged
 - v1.0.0 tag created and pushed
 - Testing procedure documented for EKS, GKE, and AKS clusters
-- Final deployment verification performed on EKS, GKE, and AKS clusters
-- Documentation updated with release notes and final deployment verification
-- Security team sign-off obtained for non production use
 - Dependencies locked with go.sum for reproducible builds
 - Agent Health response version updated to v1.0.0
 - Webhook agent image configurable via PULSAAR_AGENT_IMAGE environment variable
 
 ### Next steps
+- Build Docker images locally for agent, cli, webhook, and aggregator components
+- Build cross-platform release binaries with checksums and GPG signatures
+- Perform final deployment verification on EKS, GKE, and AKS clusters
+- Obtain security team sign-off for non production use
+- Update documentation with release notes and final deployment verification
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
