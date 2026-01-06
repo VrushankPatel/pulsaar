@@ -13,7 +13,7 @@ Pulsaar provides a gRPC-based agent that runs inside pods, serving read-only fil
 ## Features
 
 - **Read-only operations**: List directories, read files, stat files, stream files
-- **Security**: Path allowlists/denylists, mTLS encryption, RBAC integration
+- **Security**: Path allowlists/denylists, mTLS encryption, RBAC integration, rate limiting
 - **Audit logging**: All operations logged to stdout with optional HTTP aggregator
 - **Deployment modes**:
   - Embedded agent in container images
@@ -208,8 +208,9 @@ export PULSAAR_AUDIT_AGGREGATOR_URL=https://your-log-aggregator.com/logs
 - Read-only operations only
 - Path allowlists enforced
 - File size limits (1MB default)
+- Rate limiting to prevent abuse
 - mTLS encryption required in production
-- RBAC integration planned
+- RBAC integration
 - Audit logging for compliance
 
 ## Development

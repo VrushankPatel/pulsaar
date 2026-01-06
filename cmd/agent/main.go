@@ -22,6 +22,7 @@ import (
 
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -37,6 +38,8 @@ type server struct {
 }
 
 const maxReadSize int64 = 1024 * 1024 // 1MB
+
+var limiter = rate.NewLimiter(rate.Limit(10), 10) // 10 operations per second
 
 func loadOrGenerateCert() (tls.Certificate, error) {
 	certFile := os.Getenv("PULSAAR_TLS_CERT_FILE")
@@ -128,6 +131,9 @@ func auditLog(operation, path string) {
 }
 
 func (s *server) ListDirectory(ctx context.Context, req *api.ListRequest) (*api.ListResponse, error) {
+	if !limiter.Allow() {
+		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
+	}
 	auditLog("ListDirectory", req.Path)
 	if !isPathAllowed(req.Path, req.AllowedRoots) {
 		return nil, status.Errorf(codes.PermissionDenied, "path not allowed")
@@ -157,6 +163,9 @@ func (s *server) ListDirectory(ctx context.Context, req *api.ListRequest) (*api.
 }
 
 func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatResponse, error) {
+	if !limiter.Allow() {
+		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
+	}
 	auditLog("Stat", req.Path)
 	if !isPathAllowed(req.Path, req.AllowedRoots) {
 		return nil, status.Errorf(codes.PermissionDenied, "path not allowed")
@@ -179,6 +188,9 @@ func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatRespo
 }
 
 func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadResponse, error) {
+	if !limiter.Allow() {
+		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
+	}
 	auditLog("ReadFile", req.Path)
 	if !isPathAllowed(req.Path, req.AllowedRoots) {
 		return nil, status.Errorf(codes.PermissionDenied, "path not allowed")
@@ -209,6 +221,9 @@ func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadR
 }
 
 func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_StreamFileServer) error {
+	if !limiter.Allow() {
+		return status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
+	}
 	auditLog("StreamFile", req.Path)
 	if !isPathAllowed(req.Path, req.AllowedRoots) {
 		return status.Errorf(codes.PermissionDenied, "path not allowed")

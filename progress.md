@@ -42,6 +42,12 @@
 
 ### Next steps
 
+- Implement rate limiting for file operations to prevent abuse
+- Add bash completion for CLI
+- Add man pages for CLI
+- Add support for custom path allowlists per namespace
+- Implement backup and recovery for audit logs
+
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
   - mTLS production requirement via cert-manager

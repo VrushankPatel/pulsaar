@@ -5,7 +5,12 @@ import (
 	"os"
 	"testing"
 
+	"golang.org/x/time/rate"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	api "github.com/VrushankPatel/pulsaar/api"
 )
 
 func TestIsPathAllowed(t *testing.T) {
@@ -81,5 +86,35 @@ func TestHealth(t *testing.T) {
 	}
 	if resp.StatusMessage != "Agent ready" {
 		t.Errorf("expected StatusMessage to be 'Agent ready', got %s", resp.StatusMessage)
+	}
+}
+
+func TestRateLimiting(t *testing.T) {
+	// Temporarily set a low limit for testing
+	originalLimiter := limiter
+	limiter = rate.NewLimiter(rate.Limit(1), 1) // 1 per second
+	defer func() { limiter = originalLimiter }()
+
+	s := &server{}
+
+	// First call should succeed
+	_, err := s.ListDirectory(context.Background(), &api.ListRequest{
+		Path:         "/",
+		AllowedRoots: []string{"/"},
+	})
+	if err != nil {
+		t.Fatalf("First ListDirectory call failed: %v", err)
+	}
+
+	// Second call immediately should fail due to rate limit
+	_, err = s.ListDirectory(context.Background(), &api.ListRequest{
+		Path:         "/",
+		AllowedRoots: []string{"/"},
+	})
+	if err == nil {
+		t.Error("Expected rate limit error, but got none")
+	}
+	if status.Code(err) != codes.ResourceExhausted {
+		t.Errorf("Expected ResourceExhausted, got %v", status.Code(err))
 	}
 }
