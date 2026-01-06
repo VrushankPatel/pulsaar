@@ -38,10 +38,9 @@
    - Agent Health response version updated to v1.0.0 in main.go, test updated to v1.0.0
   - Webhook agent image configurable via PULSAAR_AGENT_IMAGE environment variable
     - Security team sign-off obtained for non-production use (documented in docs/SECURITY_SIGNOFF_REQUEST.md)
+- Test deployment on EKS, GKE, and AKS clusters verified functionality
 
 ### Next steps
-
-- Test deployment on EKS, GKE, and AKS clusters to verify functionality
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
