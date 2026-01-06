@@ -6,6 +6,8 @@
 - vision.md created
 - api/pulsaar.proto created
 - rules.md created
+- CONTRIBUTING.md created
+- LICENSE created
 - Pulsaar agent scaffold implemented in Go with proto stubs
 - Agent serves with TLS using self-signed certificate for MVP
 - ListDirectory, ReadFile, Stat, and StreamFile handlers implemented with path allowlist and 1MB size limits
