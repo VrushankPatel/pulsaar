@@ -18,9 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-       - uses: actions/setup-go@v6
-         with:
-           go-version: '1.21'
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.21'
       - run: go test -coverprofile=coverage.out ./...
       - uses: codecov/codecov-action@v3
         if: ${{ env.CODECOV_TOKEN }}
@@ -43,9 +43,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-       - uses: actions/setup-go@v6
-         with:
-           go-version: '1.21'
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.21'
       - run: |
           mkdir -p bin
           go build -o bin/agent ./cmd/agent
@@ -62,9 +62,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-       - uses: actions/setup-go@v6
-         with:
-           go-version: '1.21'
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.21'
       - name: Download binaries
         uses: actions/download-artifact@v4
         with:
@@ -100,8 +100,8 @@ jobs:
         run: |
 
           helm install pulsaar-test ./charts/pulsaar --set agent.image.tag=latest --set aggregator.image.tag=latest --set webhook.image.tag=latest
-       - name: Wait for deployments
-         run: kubectl wait --for=condition=available --timeout=300s deployment/pulsaar-test-agent deployment/pulsaar-test-aggregator deployment/pulsaar-test
+      - name: Wait for deployments
+        run: kubectl wait --for=condition=available --timeout=300s deployment/pulsaar-test-agent deployment/pulsaar-test-aggregator deployment/pulsaar-test
       - name: Run deployment test
         run: ./scripts/test_deployment.sh local
 
@@ -140,20 +140,20 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - uses: actions/setup-go@v6
-      with:
-        go-version: '1.25.5'
-    - name: Import GPG key
-      run: echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --import --batch
-    - name: Set GPG fingerprint
-      run: 'echo "GPG_FINGERPRINT=$(gpg --list-keys --with-colons | awk -F: \"/^pub:/ { print \$5; exit }\")" >> $GITHUB_ENV'
-    - uses: goreleaser/goreleaser-action@v5
-      with:
-        version: latest
-        args: release --clean
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GPG_FINGERPRINT: ${{ env.GPG_FINGERPRINT }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.21'
+      - name: Import GPG key
+        run: echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --import --batch
+      - name: Set GPG fingerprint
+        run: 'echo "GPG_FINGERPRINT=$(gpg --list-keys --with-colons | awk -F: \"/^pub:/ { print \$5; exit }\")" >> $GITHUB_ENV'
+      - uses: goreleaser/goreleaser-action@v5
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPG_FINGERPRINT: ${{ env.GPG_FINGERPRINT }}
