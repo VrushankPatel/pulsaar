@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pulsaar.fullname" . }}-agent
+  labels:
+    {{- include "pulsaar.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+spec:
+  type: {{ .Values.agent.service.type }}
+  ports:
+    - port: {{ .Values.agent.service.port }}
+      targetPort: {{ .Values.agent.service.targetPort }}
+      protocol: TCP
+      name: grpc
+  selector:
+    {{- include "pulsaar.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: agent

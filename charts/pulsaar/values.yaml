@@ -89,6 +89,24 @@ aggregator:
   tolerations: []
   affinity: {}
 
+# Agent configuration
+agent:
+  image:
+    repository: vrushankpatel/pulsaar-agent
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  replicaCount: 3
+  service:
+    type: ClusterIP
+    port: 50051
+    targetPort: 50051
+  podSecurityContext: {}
+  securityContext: {}
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
 # RBAC configuration
 rbac:
   create: true
