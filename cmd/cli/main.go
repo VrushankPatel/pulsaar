@@ -234,7 +234,8 @@ func connectToAgent(cmd *cobra.Command, pod, namespace string) (*grpc.ClientConn
 		return nil, nil, fmt.Errorf("failed to inject ephemeral container: %v", err)
 	}
 
-	if connectionMethod == "port-forward" {
+	switch connectionMethod {
+	case "port-forward":
 		// Find a free local port
 		lis, err := net.Listen("tcp", ":0")
 		if err != nil {
@@ -262,7 +263,7 @@ func connectToAgent(cmd *cobra.Command, pod, namespace string) (*grpc.ClientConn
 		}
 
 		return conn, func() { _ = kubectlCmd.Process.Kill() }, nil
-	} else if connectionMethod == "apiserver-proxy" {
+	case "apiserver-proxy":
 		proxyURL, err := getProxyURL(namespace, pod)
 		if err != nil {
 			return nil, nil, err
@@ -272,7 +273,7 @@ func connectToAgent(cmd *cobra.Command, pod, namespace string) (*grpc.ClientConn
 			return nil, nil, err
 		}
 		return conn, func() {}, nil
-	} else {
+	default:
 		return nil, nil, fmt.Errorf("unknown connection method: %s", connectionMethod)
 	}
 }
