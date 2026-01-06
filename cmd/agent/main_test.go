@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"os"
 	"testing"
+
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func TestIsPathAllowed(t *testing.T) {
@@ -61,5 +64,22 @@ func TestLoadCACertPool(t *testing.T) {
 	}
 	if pool != nil {
 		t.Error("expected nil pool when no CA file")
+	}
+}
+
+func TestHealth(t *testing.T) {
+	s := &server{}
+	resp, err := s.Health(context.Background(), &emptypb.Empty{})
+	if err != nil {
+		t.Fatalf("Health returned error: %v", err)
+	}
+	if !resp.Ready {
+		t.Error("expected Ready to be true")
+	}
+	if resp.Version != "v1.0.0" {
+		t.Errorf("expected Version to be v1.0.0, got %s", resp.Version)
+	}
+	if resp.StatusMessage != "Agent ready" {
+		t.Errorf("expected StatusMessage to be 'Agent ready', got %s", resp.StatusMessage)
 	}
 }

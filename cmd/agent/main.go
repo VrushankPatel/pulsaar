@@ -251,8 +251,8 @@ func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_Stre
 func (s *server) Health(ctx context.Context, req *emptypb.Empty) (*api.HealthResponse, error) {
 	return &api.HealthResponse{
 		Ready:         true,
-		Version:       "v0.1.0",
-		StatusMessage: "Agent scaffold ready",
+		Version:       "v1.0.0",
+		StatusMessage: "Agent ready",
 	}, nil
 }
 
