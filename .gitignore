@@ -3,3 +3,4 @@ autopulsaar.log
 bin/
 protoc
 protoc.zip
+coverage.out
