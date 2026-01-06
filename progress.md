@@ -38,10 +38,10 @@
 - Audit logs stored locally in aggregator persistent volume for backup and recovery
  - Deployment tested on kind to ensure compatibility with EKS, GKE, and AKS
  - Security team sign-off obtained for non-production use
-- Stable release artifacts published to GitHub Releases with signed binaries, checksums, and reproducible builds
+ - Stable release artifacts published to GitHub Releases with signed binaries, checksums, and reproducible builds
+ - Coverage report exporting added in CI
 
 ### Next steps
-add coverage report exporting in CI
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
