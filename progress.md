@@ -37,6 +37,7 @@
       - Added support for testing Pulsaar deployment on EKS, GKE, AKS clusters
 
 ### Next steps
+- Project complete
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
