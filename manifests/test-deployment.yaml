@@ -30,20 +30,20 @@ spec:
     volumeMounts:
     - name: test-files
       mountPath: /app
-   - name: pulsaar-agent
-     image: vrushankpatel/pulsaar-agent:latest
-     command: ["./agent"]
-     workingDir: /root/
-     ports:
-     - containerPort: 50051
-       name: grpc
-     env:
-     - name: PULSAAR_TLS_CERT_FILE
-       value: ""  # Use self-signed for testing
-     volumeMounts:
-     - name: test-files
-       mountPath: /app
-   volumes:
-   - name: test-files
-     configMap:
-       name: test-files
+  - name: pulsaar-agent
+    image: vrushankpatel/pulsaar-agent:latest
+    command: ["./agent"]
+    workingDir: /root/
+    ports:
+    - containerPort: 50051
+      name: grpc
+    env:
+    - name: PULSAAR_TLS_CERT_FILE
+      value: ""  # Use self-signed for testing
+    volumeMounts:
+    - name: test-files
+      mountPath: /app
+  volumes:
+  - name: test-files
+    configMap:
+      name: test-files
