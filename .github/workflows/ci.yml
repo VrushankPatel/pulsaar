@@ -14,14 +14,14 @@ on:
       - master
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+   test:
+     runs-on: ubuntu-latest
+     steps:
+       - uses: actions/checkout@v4
        - uses: actions/setup-go@v6
-          with:
+         with:
            go-version: '1.25'
-      - run: go test -coverprofile=coverage.out ./...
+       - run: go test -coverprofile=coverage.out ./...
       - uses: codecov/codecov-action@v3
         if: ${{ secrets.CODECOV_TOKEN != '' }}
         with:
@@ -38,15 +38,15 @@ jobs:
       - name: Run govulncheck
         run: govulncheck ./...
 
-  build-binaries:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+   build-binaries:
+     needs: test
+     runs-on: ubuntu-latest
+     steps:
+       - uses: actions/checkout@v4
        - uses: actions/setup-go@v6
-          with:
+         with:
            go-version: '1.25'
-      - run: |
+       - run: |
           mkdir -p bin
           go build -o bin/agent ./cmd/agent
           go build -o bin/aggregator ./cmd/aggregator
@@ -57,15 +57,15 @@ jobs:
           name: binaries
           path: bin/
 
-  deploy-test:
-    needs: build-binaries
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+   deploy-test:
+     needs: build-binaries
+     runs-on: ubuntu-latest
+     steps:
+       - uses: actions/checkout@v4
        - uses: actions/setup-go@v6
-          with:
+         with:
            go-version: '1.25'
-      - name: Download binaries
+       - name: Download binaries
         uses: actions/download-artifact@v4
         with:
           name: binaries
@@ -139,18 +139,18 @@ jobs:
             docker push vrushankpatel/pulsaar-webhook:$TAG
            fi
 
-  release:
-    needs: [test, build-binaries]
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+   release:
+     needs: [test, build-binaries]
+     if: startsWith(github.ref, 'refs/tags/')
+     runs-on: ubuntu-latest
+     steps:
+       - uses: actions/checkout@v4
+         with:
+           fetch-depth: 0
        - uses: actions/setup-go@v6
          with:
            go-version: '1.25'
-      - name: Import GPG key
+       - name: Import GPG key
         run: echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --import --batch
       - name: Set GPG fingerprint
         run: 'echo "GPG_FINGERPRINT=$(gpg --list-keys --with-colons | awk -F: \"/^pub:/ { print \$5; exit }\")" >> $GITHUB_ENV'
