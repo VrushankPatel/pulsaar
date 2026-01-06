@@ -11,14 +11,14 @@ on:
       - master
 
 jobs:
-   test:
-     runs-on: ubuntu-latest
-     steps:
-     - uses: actions/checkout@v4
-     - uses: actions/setup-go@v6
-       with:
-         go-version: '1.23'
-     - run: go mod tidy
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v6
+      with:
+        go-version: '1.23'
+    - run: go mod tidy
     - run: go test ./...
     - uses: golangci/golangci-lint-action@v9
       with:
@@ -28,16 +28,15 @@ jobs:
     - name: Run govulncheck
       run: govulncheck ./...
 
-
-   build-binaries:
-     needs: test
-     runs-on: ubuntu-latest
-     steps:
-     - uses: actions/checkout@v4
-     - uses: actions/setup-go@v6
-       with:
-         go-version: '1.23'
-     - run: |
+  build-binaries:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v6
+      with:
+        go-version: '1.23'
+    - run: |
         go build -o bin/agent ./cmd/agent
         go build -o bin/aggregator ./cmd/aggregator
         go build -o bin/cli ./cmd/cli
@@ -62,32 +61,32 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
     - run: |
-         docker build -f Dockerfile.agent -t vrushankpatel/pulsaar-agent:latest .
-         docker build -f Dockerfile.aggregator -t vrushankpatel/pulsaar-aggregator:latest .
-         docker build -f Dockerfile.cli -t vrushankpatel/pulsaar-cli:latest .
-         docker build -f Dockerfile.webhook -t vrushankpatel/pulsaar-webhook:latest .
-         if [ -n "${{ env.TAG }}" ]; then
-           docker tag vrushankpatel/pulsaar-agent:latest vrushankpatel/pulsaar-agent:${{ env.TAG }}
-           docker tag vrushankpatel/pulsaar-aggregator:latest vrushankpatel/pulsaar-aggregator:${{ env.TAG }}
-           docker tag vrushankpatel/pulsaar-cli:latest vrushankpatel/pulsaar-cli:${{ env.TAG }}
-           docker tag vrushankpatel/pulsaar-webhook:latest vrushankpatel/pulsaar-webhook:${{ env.TAG }}
-           docker push vrushankpatel/pulsaar-agent:${{ env.TAG }}
-           docker push vrushankpatel/pulsaar-aggregator:${{ env.TAG }}
-           docker push vrushankpatel/pulsaar-cli:${{ env.TAG }}
-           docker push vrushankpatel/pulsaar-webhook:${{ env.TAG }}
-         fi
+        docker build -f Dockerfile.agent -t vrushankpatel/pulsaar-agent:latest .
+        docker build -f Dockerfile.aggregator -t vrushankpatel/pulsaar-aggregator:latest .
+        docker build -f Dockerfile.cli -t vrushankpatel/pulsaar-cli:latest .
+        docker build -f Dockerfile.webhook -t vrushankpatel/pulsaar-webhook:latest .
+        if [ -n "${{ env.TAG }}" ]; then
+          docker tag vrushankpatel/pulsaar-agent:latest vrushankpatel/pulsaar-agent:${{ env.TAG }}
+          docker tag vrushankpatel/pulsaar-aggregator:latest vrushankpatel/pulsaar-aggregator:${{ env.TAG }}
+          docker tag vrushankpatel/pulsaar-cli:latest vrushankpatel/pulsaar-cli:${{ env.TAG }}
+          docker tag vrushankpatel/pulsaar-webhook:latest vrushankpatel/pulsaar-webhook:${{ env.TAG }}
+          docker push vrushankpatel/pulsaar-agent:${{ env.TAG }}
+          docker push vrushankpatel/pulsaar-aggregator:${{ env.TAG }}
+          docker push vrushankpatel/pulsaar-cli:${{ env.TAG }}
+          docker push vrushankpatel/pulsaar-webhook:${{ env.TAG }}
+        fi
 
   release:
     needs: [test, build-binaries]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
-     - uses: actions/checkout@v4
-       with:
-         fetch-depth: 0
-     - uses: actions/setup-go@v6
-       with:
-         go-version: '1.23'
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-go@v6
+      with:
+        go-version: '1.23'
     - uses: goreleaser/goreleaser-action@v5
       with:
         version: latest
