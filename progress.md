@@ -25,13 +25,14 @@
 - Helm charts created for easy Kubernetes deployment with configurable TLS, RBAC, and monitoring options
 - Production monitoring with Prometheus metrics exported from agent and webhook
 - Production Docker images built and pushed to docker.io/vrushankpatel/pulsaar-{component}:latest
- - Audit aggregator implemented for centralized logging integration, receiving audit logs from agents and forwarding to external systems
- - Comprehensive documentation created including API reference, deployment guides, and troubleshooting
+  - Audit aggregator implemented for centralized logging integration, receiving audit logs from agents and forwarding to external systems
+  - Comprehensive documentation created including API reference, deployment guides, and troubleshooting
+  - High availability deployment with multiple replicas and load balancing implemented in Helm chart and documentation
 
 - Security scanning and dependency vulnerability checks added to CI/CD pipeline
 
 ### Last commit summary
-    - Added security scanning and dependency vulnerability checks to CI/CD pipeline
+    - Implemented high availability deployment with multiple replicas and load balancing in Helm chart and documentation
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -61,6 +62,5 @@
   - Security team adoption risk
 
 ### Next steps
-- Plan for high availability deployment with multiple replicas and load balancing
 - Implement backup and recovery procedures for configuration and audit data
 - Create runbooks for deployment, upgrades, and incident response

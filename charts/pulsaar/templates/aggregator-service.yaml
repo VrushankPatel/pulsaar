@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pulsaar.fullname" . }}-aggregator
+  labels:
+    {{- include "pulsaar.labels" . | nindent 4 }}
+    app.kubernetes.io/component: aggregator
+spec:
+  type: {{ .Values.aggregator.service.type }}
+  ports:
+    - port: {{ .Values.aggregator.service.port }}
+      targetPort: {{ .Values.aggregator.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "pulsaar.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: aggregator

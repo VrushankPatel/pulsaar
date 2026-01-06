@@ -182,6 +182,64 @@ aggregator:
   image: vrushankpatel/pulsaar-aggregator:latest
 ```
 
+## High Availability Deployment
+
+For production environments requiring high availability, deploy multiple replicas of the webhook and aggregator components with load balancing.
+
+### Configuring Replicas
+
+The Helm chart defaults to 3 replicas for both webhook and aggregator for HA. You can adjust in `values.yaml`:
+
+```yaml
+webhook:
+  replicaCount: 3
+
+aggregator:
+  replicaCount: 3
+```
+
+### Load Balancing
+
+Kubernetes Services automatically provide load balancing across replicas. The webhook and aggregator services distribute traffic evenly.
+
+### Node Affinity and Anti-Affinity
+
+To ensure replicas are spread across different nodes for fault tolerance, configure anti-affinity in `values.yaml`:
+
+```yaml
+webhook:
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/component
+            operator: In
+            values:
+            - webhook
+        topologyKey: kubernetes.io/hostname
+
+aggregator:
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/component
+              operator: In
+              values:
+              - aggregator
+          topologyKey: kubernetes.io/hostname
+```
+
+This ensures webhook pods run on different nodes (required), and aggregator pods prefer different nodes.
+
+### Monitoring HA Setup
+
+Ensure Prometheus is scraping all replicas for comprehensive monitoring. The ServiceMonitor will automatically discover all pods.
+
 ## TLS Configuration
 
 ### MVP (Development)
