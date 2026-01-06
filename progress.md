@@ -40,10 +40,7 @@
 - Helm chart bugs fixed for proper deployment on Kubernetes clusters
 - Local deployment testing completed with kind cluster
 - Security team sign-off obtained for non-production use
-
-### Next steps
-
-- Publish stable release artifacts to GitHub Releases with signed binaries, checksums, and reproducible builds
+- Stable release artifacts published to GitHub Releases with signed binaries, checksums, and reproducible builds
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
