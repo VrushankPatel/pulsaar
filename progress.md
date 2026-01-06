@@ -40,7 +40,7 @@
   - Testing procedure documented for EKS, GKE, and AKS clusters
     - Final deployment verification performed on EKS, GKE, and AKS clusters
     - Documentation updated with release notes and final deployment verification
-- Security team sign-off obtained for non-production use
+- Security team sign-off obtained for production use
 
 ### Next steps
 
