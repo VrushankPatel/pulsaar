@@ -166,8 +166,10 @@ func injectEphemeralContainer(podName, namespace string) error {
 	}
 
 	// Wait for the container to be running
-	err = wait.PollImmediate(1*time.Second, 30*time.Second, func() (bool, error) {
-		pod, err := clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	err = wait.PollUntilContextTimeout(ctx, 1*time.Second, 30*time.Second, true, func(ctx context.Context) (bool, error) {
+		pod, err := clientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -251,19 +253,19 @@ func connectToAgent(cmd *cobra.Command, pod, namespace string) (*grpc.ClientConn
 		// Wait for port-forward to be ready
 		time.Sleep(2 * time.Second)
 
-		conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+		conn, err := grpc.NewClient(fmt.Sprintf("localhost:%d", localPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 		if err != nil {
-			kubectlCmd.Process.Kill()
+			_ = kubectlCmd.Process.Kill()
 			return nil, nil, err
 		}
 
-		return conn, func() { kubectlCmd.Process.Kill() }, nil
+		return conn, func() { _ = kubectlCmd.Process.Kill() }, nil
 	} else if connectionMethod == "apiserver-proxy" {
 		proxyURL, err := getProxyURL(namespace, pod)
 		if err != nil {
 			return nil, nil, err
 		}
-		conn, err := grpc.Dial(proxyURL, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+		conn, err := grpc.NewClient(proxyURL, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 		if err != nil {
 			return nil, nil, err
 		}
@@ -288,7 +290,9 @@ func main() {
 	exploreCmd.Flags().String("pod", "", "Pod name")
 	exploreCmd.Flags().String("namespace", "default", "Namespace")
 	exploreCmd.Flags().String("path", "/", "Path to explore")
-	exploreCmd.MarkFlagRequired("pod")
+	if err := exploreCmd.MarkFlagRequired("pod"); err != nil {
+		panic(err)
+	}
 
 	readCmd := &cobra.Command{
 		Use:   "read",
@@ -299,8 +303,12 @@ func main() {
 	readCmd.Flags().String("pod", "", "Pod name")
 	readCmd.Flags().String("namespace", "default", "Namespace")
 	readCmd.Flags().String("path", "", "Path to file")
-	readCmd.MarkFlagRequired("pod")
-	readCmd.MarkFlagRequired("path")
+	if err := readCmd.MarkFlagRequired("pod"); err != nil {
+		panic(err)
+	}
+	if err := readCmd.MarkFlagRequired("path"); err != nil {
+		panic(err)
+	}
 
 	streamCmd := &cobra.Command{
 		Use:   "stream",
@@ -312,8 +320,12 @@ func main() {
 	streamCmd.Flags().String("namespace", "default", "Namespace")
 	streamCmd.Flags().String("path", "", "Path to file")
 	streamCmd.Flags().Int64("chunk-size", 64*1024, "Chunk size in bytes")
-	streamCmd.MarkFlagRequired("pod")
-	streamCmd.MarkFlagRequired("path")
+	if err := streamCmd.MarkFlagRequired("pod"); err != nil {
+		panic(err)
+	}
+	if err := streamCmd.MarkFlagRequired("path"); err != nil {
+		panic(err)
+	}
 
 	statCmd := &cobra.Command{
 		Use:   "stat",
@@ -324,8 +336,12 @@ func main() {
 	statCmd.Flags().String("pod", "", "Pod name")
 	statCmd.Flags().String("namespace", "default", "Namespace")
 	statCmd.Flags().String("path", "", "Path to file or directory")
-	statCmd.MarkFlagRequired("pod")
-	statCmd.MarkFlagRequired("path")
+	if err := statCmd.MarkFlagRequired("pod"); err != nil {
+		panic(err)
+	}
+	if err := statCmd.MarkFlagRequired("path"); err != nil {
+		panic(err)
+	}
 
 	rootCmd.AddCommand(exploreCmd)
 	rootCmd.AddCommand(readCmd)

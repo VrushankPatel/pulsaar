@@ -32,7 +32,7 @@ func main() {
 	http.HandleFunc("/mutate", handleMutate)
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	})
 	http.Handle("/metrics", promhttp.Handler())
 
@@ -109,7 +109,7 @@ func handleMutate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(respBytes)
+	_, _ = w.Write(respBytes)
 }
 
 func mutatePod(pod *corev1.Pod) ([]byte, error) {

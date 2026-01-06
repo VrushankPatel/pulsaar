@@ -116,7 +116,10 @@ func auditLog(operation, path string) {
 			"agent_id":  hostname,
 		}
 		jsonData, _ := json.Marshal(data)
-		http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+		_, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+		if err != nil {
+			log.Printf("Failed to send audit log: %v", err)
+		}
 	}
 }
 
