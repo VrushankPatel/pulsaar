@@ -9,7 +9,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o cli ./cmd/cli
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o aggregator ./cmd/aggregator
 
 # Final stage
 FROM alpine:latest
@@ -18,6 +18,8 @@ RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
-COPY --from=builder /app/cli .
+COPY --from=builder /app/aggregator .
 
-ENTRYPOINT ["./cli"]
+EXPOSE 8080
+
+CMD ["./aggregator"]
