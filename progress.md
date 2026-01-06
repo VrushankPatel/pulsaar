@@ -31,11 +31,9 @@
    - Implemented backup and recovery procedures for configuration and audit data
     - Runbooks created for deployment, upgrades, and incident response
     - Security sign-off request document created
-     - Docker images built locally for agent, cli, webhook, and aggregator components
-     - Security scanning and dependency vulnerability checks added to CI/CD pipeline
-
-      ### Last commit summary
-          - Added support for testing Pulsaar deployment on EKS, GKE, AKS clusters
+      - Docker images built locally for agent, cli, webhook, and aggregator components
+      - Security scanning and dependency vulnerability checks added to CI/CD pipeline
+      - Added support for testing Pulsaar deployment on EKS, GKE, AKS clusters
 
 ### Next steps
 
