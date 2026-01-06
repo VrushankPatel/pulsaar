@@ -574,6 +574,62 @@ func TestStatEndToEnd(t *testing.T) {
 	}
 }
 
+func TestHealthEndToEnd(t *testing.T) {
+	// Start server
+	cert, err := generateSelfSignedCert()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	creds := credentials.NewServerTLSFromCert(&cert)
+
+	lis, err := net.Listen("tcp", ":0") // free port
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = lis.Close() }()
+
+	port := lis.Addr().(*net.TCPAddr).Port
+
+	s := grpc.NewServer(grpc.Creds(creds))
+	api.RegisterPulsaarAgentServer(s, &server{})
+
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			t.Logf("server error: %v", err)
+		}
+	}()
+	defer s.Stop()
+
+	time.Sleep(100 * time.Millisecond) // wait for server
+
+	// Connect client
+	conn, err := grpc.NewClient(fmt.Sprintf("localhost:%d", port), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = conn.Close() }()
+
+	client := api.NewPulsaarAgentClient(conn)
+
+	// Call Health
+	resp, err := client.Health(context.Background(), &emptypb.Empty{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Assert
+	if !resp.Ready {
+		t.Error("expected ready true")
+	}
+	if resp.Version != version {
+		t.Errorf("expected version %s, got %s", version, resp.Version)
+	}
+	if resp.StatusMessage != "Agent ready" {
+		t.Errorf("expected status 'Agent ready', got %s", resp.StatusMessage)
+	}
+}
+
 func TestCreateTLSConfig(t *testing.T) {
 	// Test default config
 	config, err := createTLSConfig()

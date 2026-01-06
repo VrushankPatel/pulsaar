@@ -44,12 +44,10 @@
     - Deploy script created for EKS, GKE, and AKS clusters with functionality verification
      - Stable release v1.0.0 tagged and GitHub release created
      - Post-release CI fixes applied for Go version updates and YAML syntax corrections
-- Added binary file detection and user warnings in CLI
-- Enhanced error handling with more descriptive messages
+ - Added binary file detection and user warnings in CLI
+ - Enhanced error handling with more descriptive messages
+ - Added CLI command for health check of agents
 
-
-### Next steps
-- Add CLI command for health check of agents
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy

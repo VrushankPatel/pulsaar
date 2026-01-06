@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/cobra/doc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/protobuf/types/known/emptypb"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -367,10 +368,23 @@ func main() {
 		panic(err)
 	}
 
+	healthCmd := &cobra.Command{
+		Use:   "health",
+		Short: "Check health of a Pulsaar agent",
+		RunE:  runHealth,
+	}
+
+	healthCmd.Flags().String("pod", "", "Pod name")
+	healthCmd.Flags().String("namespace", "default", "Namespace")
+	if err := healthCmd.MarkFlagRequired("pod"); err != nil {
+		panic(err)
+	}
+
 	rootCmd.AddCommand(exploreCmd)
 	rootCmd.AddCommand(readCmd)
 	rootCmd.AddCommand(streamCmd)
 	rootCmd.AddCommand(statCmd)
+	rootCmd.AddCommand(healthCmd)
 
 	completionCmd := &cobra.Command{
 		Use:   "completion [bash|zsh|fish|powershell]",
@@ -630,6 +644,38 @@ func runStat(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Size: %d bytes\n", resp.Info.SizeBytes)
 	fmt.Printf("Mode: %s\n", resp.Info.Mode)
 	fmt.Printf("Modified: %s\n", resp.Info.Mtime.AsTime().Format("2006-01-02 15:04:05"))
+
+	return nil
+}
+
+func runHealth(cmd *cobra.Command, args []string) error {
+	pod, _ := cmd.Flags().GetString("pod")
+	namespace, _ := cmd.Flags().GetString("namespace")
+
+	err := checkUserAccess(namespace, pod)
+	if err != nil {
+		return err
+	}
+
+	conn, cleanup, err := connectToAgent(cmd, pod, namespace)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+	defer func() { _ = conn.Close() }()
+
+	client := api.NewPulsaarAgentClient(conn)
+
+	resp, err := client.Health(context.Background(), &emptypb.Empty{})
+	if err != nil {
+		return fmt.Errorf("failed to get health from pod %s/%s. Error: %v", namespace, pod, err)
+	}
+
+	fmt.Printf("Ready: %t\n", resp.Ready)
+	fmt.Printf("Version: %s\n", resp.Version)
+	fmt.Printf("Status: %s\n", resp.StatusMessage)
+	fmt.Printf("Commit: %s\n", resp.Commit)
+	fmt.Printf("Date: %s\n", resp.Date)
 
 	return nil
 }

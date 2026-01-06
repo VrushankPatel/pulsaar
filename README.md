@@ -135,10 +135,16 @@ Stream a large file:
 
 Note: When streaming binary files, the CLI will display a warning as output may be corrupted.
 
-Get file info:
+ Get file info:
 
 ```bash
 ./cli stat --pod my-pod --namespace default --path /app/data.txt
+```
+
+Check agent health:
+
+```bash
+./cli health --pod my-pod --namespace default
 ```
 
 Generate shell completion:
