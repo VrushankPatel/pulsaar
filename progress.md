@@ -18,12 +18,10 @@
 - RBAC enforced at control plane using TokenReview and SubjectAccessReview
 - Mutating webhook for sidecar injection implemented
 - Test deployment on EKS, GKE, and AKS implemented with scripts/test_deployment.sh and manifests/test-deployment.yaml
-- Security team sign-off obtained for non-production use
 - Production deployment planning completed
 - Helm charts created for easy Kubernetes deployment with configurable TLS, RBAC, and monitoring options
 - Production monitoring with Prometheus metrics exported from agent and webhook
-- Production Docker images built and pushed to docker.io/vrushankpatel/pulsaar-{component}:latest
-  - Audit aggregator implemented for centralized logging integration, receiving audit logs from agents and forwarding to external systems
+- Audit aggregator implemented for centralized logging integration, receiving audit logs from agents and forwarding to external systems
   - Comprehensive documentation created including API reference, deployment guides, and troubleshooting
   - High availability deployment with multiple replicas and load balancing implemented in Helm chart and documentation
 
@@ -62,3 +60,6 @@
    - Security team adoption risk
 
 ### Next steps
+- Obtain security team sign-off for non-production use
+- Build and push production Docker images to docker.io/vrushankpatel/pulsaar-{component}:latest
+- Run test deployment on EKS, GKE, AKS to verify functionality
