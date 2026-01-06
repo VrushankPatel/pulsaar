@@ -54,16 +54,16 @@ kubectl wait --for=condition=Ready pod/pulsaar-test-pod --timeout=60s
 
 # Test CLI functionality
 echo "Testing CLI explore..."
-bin/cli explore --pod pulsaar-test-pod --namespace default --path /app
+bin/cli explore --pod pulsaar-test-pod --namespace default --path /app --connection-method port-forward
 
 echo "Testing CLI read..."
-bin/cli read --pod pulsaar-test-pod --namespace default --path /app/config.yaml
+bin/cli read --pod pulsaar-test-pod --namespace default --path /app/config.yaml --connection-method port-forward
 
 echo "Testing CLI stat..."
-bin/cli stat --pod pulsaar-test-pod --namespace default --path /app/log.txt
+bin/cli stat --pod pulsaar-test-pod --namespace default --path /app/log.txt --connection-method port-forward
 
 echo "Testing CLI stream..."
-bin/cli stream --pod pulsaar-test-pod --namespace default --path /app/log.txt
+bin/cli stream --pod pulsaar-test-pod --namespace default --path /app/log.txt --connection-method port-forward
 
 # Test with apiserver proxy if supported
 echo "Testing CLI with apiserver proxy..."
