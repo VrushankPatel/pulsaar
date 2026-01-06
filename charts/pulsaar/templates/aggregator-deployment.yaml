@@ -18,9 +18,9 @@ spec:
         app.kubernetes.io/component: aggregator
       {{- if .Values.monitoring.enabled }}
       annotations:
-        prometheus.io/scrape: {{ .Values.monitoring.prometheus.annotations.prometheus.io/scrape | quote }}
-        prometheus.io/port: {{ .Values.monitoring.prometheus.annotations.prometheus.io/port | quote }}
-        prometheus.io/path: {{ .Values.monitoring.prometheus.annotations.prometheus.io/path | quote }}
+        "prometheus.io/scrape": {{ index .Values.monitoring.prometheus.annotations "prometheus.io/scrape" | quote }}
+        "prometheus.io/port": {{ index .Values.monitoring.prometheus.annotations "prometheus.io/port" | quote }}
+        "prometheus.io/path": {{ index .Values.monitoring.prometheus.annotations "prometheus.io/path" | quote }}
       {{- end }}
     spec:
       {{- with .Values.imagePullSecrets }}
@@ -46,28 +46,29 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: http
+              port: 8080
+              scheme: HTTP
             initialDelaySeconds: 15
             periodSeconds: 20
           readinessProbe:
             httpGet:
               path: /health
-              port: http
+              port: 8080
+              scheme: HTTP
             initialDelaySeconds: 5
             periodSeconds: 10
-           resources:
-             {{- toYaml .Values.aggregator.resources | nindent 12 }}
-           volumeMounts:
-             {{- if .Values.aggregator.persistence.enabled }}
-             - name: audit-logs
-               mountPath: /var/log/pulsaar
-             {{- end }}
-       {{- if .Values.aggregator.persistence.enabled }}
-       volumes:
-         - name: audit-logs
-           persistentVolumeClaim:
-             claimName: {{ include "pulsaar.fullname" . }}-aggregator
-       {{- end }}
+          resources: {}
+          {{- if .Values.aggregator.persistence.enabled }}
+          volumeMounts:
+            - name: audit-logs
+              mountPath: /var/log/pulsaar
+          {{- end }}
+      {{- if .Values.aggregator.persistence.enabled }}
+      volumes:
+        - name: audit-logs
+          persistentVolumeClaim:
+            claimName: {{ include "pulsaar.fullname" . }}-aggregator
+      {{- end }}
        {{- with .Values.aggregator.nodeSelector }}
        nodeSelector:
          {{- toYaml . | nindent 8 }}

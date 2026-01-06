@@ -68,7 +68,7 @@ Webhook CA bundle
 {{- if .Values.webhook.tls.certManager.enabled }}
 {{- $secret := lookup "v1" "Secret" .Release.Namespace .Values.webhook.tls.secretName }}
 {{- if $secret }}
-{{- $secret.data.ca\.crt | b64dec }}
+{{- index $secret.data "ca.crt" | b64dec }}
 {{- end }}
 {{- else }}
 {{- .Values.webhook.tls.caBundle | default "" }}

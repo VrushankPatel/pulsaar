@@ -41,8 +41,8 @@ if ! command -v bin/cli >/dev/null 2>&1; then
 fi
 
 # Copy agent binary to expected location for hostPath volume
-cp bin/agent /tmp/agent
-chmod +x /tmp/agent
+# cp bin/agent tmp/agent
+# chmod +x tmp/agent
 
 # Deploy test resources
 echo "Deploying test pod..."
@@ -75,6 +75,6 @@ bin/cli read --pod pulsaar-test-pod --namespace default --path /app/config.yaml 
 # Clean up
 echo "Cleaning up test resources..."
 kubectl delete -f manifests/test-deployment.yaml
-rm -f /tmp/agent
+# rm -f /tmp/agent
 
 echo "Deployment test completed successfully!"

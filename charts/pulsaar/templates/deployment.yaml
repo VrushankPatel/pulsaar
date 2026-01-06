@@ -15,9 +15,9 @@ spec:
         {{- include "pulsaar.selectorLabels" . | nindent 8 }}
       {{- if .Values.monitoring.enabled }}
       annotations:
-        prometheus.io/scrape: {{ .Values.monitoring.prometheus.annotations.prometheus.io/scrape | quote }}
-        prometheus.io/port: {{ .Values.monitoring.prometheus.annotations.prometheus.io/port | quote }}
-        prometheus.io/path: {{ .Values.monitoring.prometheus.annotations.prometheus.io/path | quote }}
+        "prometheus.io/scrape": {{ index .Values.monitoring.prometheus.annotations "prometheus.io/scrape" | quote }}
+        "prometheus.io/port": {{ index .Values.monitoring.prometheus.annotations "prometheus.io/port" | quote }}
+        "prometheus.io/path": {{ index .Values.monitoring.prometheus.annotations "prometheus.io/path" | quote }}
       {{- end }}
     spec:
       {{- with .Values.imagePullSecrets }}
