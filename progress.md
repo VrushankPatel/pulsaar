@@ -43,8 +43,7 @@
   - Security team sign-off obtained for non-production use (documented in docs/SECURITY_SIGNOFF_REQUEST.md)
 
 ### Next steps
- - Update documentation with release notes and final deployment verification
- - Release v1.0.0
+ - Project completed - v1.0.0 released
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
