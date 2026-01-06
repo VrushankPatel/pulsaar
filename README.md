@@ -125,11 +125,15 @@ Read a file:
 ./cli read --pod my-pod --namespace default --path /app/config.yaml
 ```
 
+Note: When reading binary files, the CLI will display a warning as output may be corrupted.
+
 Stream a large file:
 
 ```bash
 ./cli stream --pod my-pod --namespace default --path /var/log/app.log
 ```
+
+Note: When streaming binary files, the CLI will display a warning as output may be corrupted.
 
 Get file info:
 

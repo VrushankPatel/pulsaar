@@ -35,6 +35,20 @@ var (
 	date    = "unknown"
 )
 
+func isBinary(data []byte) bool {
+	if len(data) == 0 {
+		return false
+	}
+	nonPrintable := 0
+	for _, b := range data {
+		if (b < 32 && b != 9 && b != 10 && b != 13) || b > 126 {
+			nonPrintable++
+		}
+	}
+	ratio := float64(nonPrintable) / float64(len(data))
+	return ratio > 0.05
+}
+
 func getConfig() (*rest.Config, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -525,6 +539,9 @@ func runRead(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read file: %v", err)
 	}
 
+	if isBinary(resp.Data) {
+		fmt.Println("Warning: This file appears to be binary. Output may be corrupted.")
+	}
 	fmt.Print(string(resp.Data))
 	if !resp.Eof {
 		fmt.Println("\n... (file truncated)")
@@ -562,6 +579,7 @@ func runStream(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to stream file: %v", err)
 	}
 
+	warned := false
 	for {
 		resp, err := stream.Recv()
 		if err == io.EOF {
@@ -569,6 +587,10 @@ func runStream(cmd *cobra.Command, args []string) error {
 		}
 		if err != nil {
 			return fmt.Errorf("failed to receive stream: %v", err)
+		}
+		if !warned && isBinary(resp.Data) {
+			fmt.Println("Warning: This file appears to be binary. Output may be corrupted.")
+			warned = true
 		}
 		fmt.Print(string(resp.Data))
 	}

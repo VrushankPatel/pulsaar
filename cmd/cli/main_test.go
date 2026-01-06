@@ -935,3 +935,30 @@ func TestMTLSEndToEnd(t *testing.T) {
 		t.Error("expected ready true")
 	}
 }
+
+func TestIsBinary(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+		want bool
+	}{
+		{"empty", []byte{}, false},
+		{"text", []byte("hello world"), false},
+		{"text with newlines", []byte("hello\nworld"), false},
+		{"binary null", []byte{0, 1, 2}, true},
+		{"mixed", []byte("hello\x00world"), true},
+		{"high ascii", []byte("hello\x80world"), true},
+		{"control chars", []byte("hello\x01world"), true},
+		{"tab ok", []byte("hello\tworld"), false},
+		{"newline ok", []byte("hello\nworld"), false},
+		{"carriage return ok", []byte("hello\rworld"), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isBinary(tt.data)
+			if got != tt.want {
+				t.Errorf("isBinary(%q) = %v, want %v", tt.data, got, tt.want)
+			}
+		})
+	}
+}
