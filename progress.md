@@ -37,10 +37,10 @@
          - Release process documented in CONTRIBUTING.md
          - Stable release v1.0.0 tagged and published to GitHub Releases with cross-platform binaries, checksums, and GPG signatures
  - v1.0.0 tag created and pushed to trigger release
- - Testing procedure documented for EKS, GKE, and AKS clusters
+  - Testing procedure documented for EKS, GKE, and AKS clusters
+  - Final deployment verification performed on EKS, GKE, and AKS clusters
 
 ### Next steps
-- Final deployment verification performed on EKS, GKE, and AKS clusters
 - Documentation updated with release notes and final deployment verification
 - Security team sign-off obtained for non-production use
 
