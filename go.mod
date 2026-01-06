@@ -1,6 +1,6 @@
 module github.com/VrushankPatel/pulsaar
 
-go 1.25.0
+go 1.22
 
 require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
