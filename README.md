@@ -208,6 +208,32 @@ go build ./cmd/...
 go test ./...
 ```
 
+### Deployment Testing
+
+Test Pulsaar deployment on Kubernetes clusters:
+
+```bash
+# Build binaries
+go build -o agent ./cmd/agent
+go build -o cli ./cmd/cli
+mkdir -p pulsaar && cp cli pulsaar/cli
+
+# Test on local cluster
+./scripts/test_deployment.sh local
+
+# Test on EKS
+export KUBECONFIG_EKS=/path/to/eks/kubeconfig
+./scripts/test_deployment.sh eks
+
+# Test on GKE
+export KUBECONFIG_GKE=/path/to/gke/kubeconfig
+./scripts/test_deployment.sh gke
+
+# Test on AKS
+export KUBECONFIG_AKS=/path/to/aks/kubeconfig
+./scripts/test_deployment.sh aks
+```
+
 ### Validation
 
 ```bash

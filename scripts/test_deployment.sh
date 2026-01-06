@@ -4,7 +4,30 @@ set -euo pipefail
 # Test deployment script for Pulsaar on Kubernetes clusters (EKS, GKE, AKS)
 # This script deploys a test pod with the agent and test files, then tests CLI functionality
 
-echo "Testing Pulsaar deployment on Kubernetes cluster..."
+# Usage: ./test_deployment.sh [eks|gke|aks|local]
+CLOUD=${1:-local}
+
+echo "Testing Pulsaar deployment on $CLOUD Kubernetes cluster..."
+
+# Set kubeconfig based on cloud
+case $CLOUD in
+    eks)
+        export KUBECONFIG=${KUBECONFIG_EKS:-$HOME/.kube/eks-config}
+        ;;
+    gke)
+        export KUBECONFIG=${KUBECONFIG_GKE:-$HOME/.kube/gke-config}
+        ;;
+    aks)
+        export KUBECONFIG=${KUBECONFIG_AKS:-$HOME/.kube/aks-config}
+        ;;
+    local)
+        # Use default kubeconfig
+        ;;
+    *)
+        echo "Unknown cloud: $CLOUD. Supported: eks, gke, aks, local"
+        exit 1
+        ;;
+esac
 
 # Check prerequisites
 if ! command -v kubectl >/dev/null 2>&1; then
