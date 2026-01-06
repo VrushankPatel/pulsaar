@@ -39,6 +39,10 @@
 
 ### Next steps
 
+- Test deployment on EKS, GKE, and AKS to ensure compatibility
+- Obtain security team sign-off for non-production use
+- Publish stable release artifacts (signed binaries, checksums, reproducible builds) to GitHub Releases
+
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
   - mTLS production requirement via cert-manager
