@@ -36,14 +36,13 @@
          - Cross-platform release binaries built and published to GitHub Releases with checksums and GPG signatures on tags
          - Release process documented in CONTRIBUTING.md
          - Stable release v1.0.0 tagged and published to GitHub Releases with cross-platform binaries, checksums, and GPG signatures
+- v1.0.0 tag created and pushed to trigger release
 - Testing procedure documented for EKS, GKE, and AKS clusters
 - Final deployment verification performed on EKS, GKE, and AKS clusters
 - Documentation updated with release notes and final deployment verification
 - Security team sign-off obtained for non-production use
 
-### Next steps
 
-- Create and push v1.0.0 tag to trigger release
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
