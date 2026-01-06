@@ -46,6 +46,10 @@
 
 
 ### Next steps
+- Implement per-pod allowlist configuration via pod annotations
+- Add binary file detection and user warnings in CLI
+- Enhance error handling with more descriptive messages
+- Add CLI command for health check of agents
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
