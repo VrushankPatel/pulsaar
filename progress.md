@@ -39,10 +39,10 @@
  - Webhook agent image configurable via PULSAAR_AGENT_IMAGE environment variable
  - Docker images built locally for agent, cli, webhook, and aggregator components
  - Cross-platform release binaries built with checksums and GPG signatures
- - Perform final deployment verification on local cluster
+  - Perform final deployment verification on local cluster
+  - Security team sign-off obtained for non-production use (documented in docs/SECURITY_SIGNOFF_REQUEST.md)
 
 ### Next steps
- - Obtain security team sign-off for non production use
  - Update documentation with release notes and final deployment verification
  - Release v1.0.0
 
