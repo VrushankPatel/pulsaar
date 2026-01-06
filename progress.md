@@ -37,6 +37,8 @@
 
 ### Next steps
 
+- Add aggregator image to CI/CD pipeline
+
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
   - mTLS production requirement via cert-manager
