@@ -1,0 +1,33 @@
+# Security Team Sign-Off Request for Pulsaar Non-Production Use
+
+## Overview
+Pulsaar is a production-safe, auditable, read-only file exploration tool for Kubernetes pods. It provides developers with safe access to container filesystems for troubleshooting and compliance without requiring kubectl exec or shell logins.
+
+## Security Features
+- **Read-only operations**: Only supports ListDirectory, Stat, ReadFile, and StreamFile operations
+- **Path allowlisting**: Explicit allowlists prevent access to sensitive paths like /etc/passwd, /proc, etc.
+- **Size limits**: 1MB limit on file reads to prevent large data exfiltration
+- **mTLS encryption**: Mutual TLS for all connections in production
+- **RBAC enforcement**: Uses Kubernetes TokenReview and SubjectAccessReview for access control
+- **Audit logging**: All operations logged to stdout and optional external aggregator
+- **No shell access**: No exec or command execution capabilities
+
+## Deployment Modes
+1. **Sidecar injection**: Via mutating webhook for automatic adoption
+2. **Ephemeral containers**: For on-demand access in locked clusters
+3. **Embedded agent**: For teams that can modify images
+
+## Request
+Please review the implementation and provide sign-off for non-production use of Pulsaar.
+
+## Files to Review
+- `vision.md`: Project vision and security model
+- `api/pulsaar.proto`: gRPC API definition
+- `cmd/agent/main.go`: Agent implementation
+- `cmd/cli/main.go`: CLI implementation
+- `cmd/webhook/main.go`: Mutating webhook
+- `charts/`: Helm deployment charts
+- `docs/`: Documentation including deployment guides and runbooks
+
+## Contact
+Vrushank Patel - vrushank@example.com

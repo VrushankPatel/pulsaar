@@ -27,10 +27,11 @@
 
   - Security scanning and dependency vulnerability checks added to CI/CD pipeline
   - Implemented backup and recovery procedures for configuration and audit data
-  - Runbooks created for deployment, upgrades, and incident response
+   - Runbooks created for deployment, upgrades, and incident response
+   - Security sign-off request document created
 
- ### Last commit summary
-     - Created runbooks for deployment, upgrades, and incident response
+  ### Last commit summary
+      - Created security sign-off request document
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -57,9 +58,8 @@
 - Create runbooks for deployment, upgrades, and incident response
 
   ### Known issues
-   - Security team adoption risk
+    - Awaiting security team sign-off for non-production use
 
 ### Next steps
-- Obtain security team sign-off for non-production use
 - Build and push production Docker images to docker.io/vrushankpatel/pulsaar-{component}:latest
 - Run test deployment on EKS, GKE, AKS to verify functionality
