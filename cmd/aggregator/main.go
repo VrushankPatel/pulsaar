@@ -90,14 +90,20 @@ func handleAudit(w http.ResponseWriter, r *http.Request) {
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, `{"status": "ok"}`)
+	if _, err := fmt.Fprintf(w, `{"status": "ok"}`); err != nil {
+		log.Printf("Error writing health response: %v", err)
+	}
 }
 
 func main() {
 	if err := initAuditFile(); err != nil {
 		log.Fatalf("Failed to initialize audit file: %v", err)
 	}
-	defer auditFile.Close()
+	defer func() {
+		if err := auditFile.Close(); err != nil {
+			log.Printf("Error closing audit file: %v", err)
+		}
+	}()
 
 	port := os.Getenv("PULSAAR_AGGREGATOR_PORT")
 	if port == "" {
