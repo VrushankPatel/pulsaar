@@ -404,10 +404,56 @@ export PULSAAR_AUDIT_AGGREGATOR_URL=http://pulsaar-aggregator.pulsaar-system.svc
 
 ## Testing Deployment
 
-Use the test deployment script:
+### Local Testing
+
+Use the test deployment script for local clusters (minikube, kind, etc.):
 
 ```bash
-bash scripts/test_deployment.sh
+bash scripts/test_deployment.sh local
 ```
 
-This will deploy a test setup on your cluster and verify functionality.
+This will deploy a test setup on your local cluster and verify functionality.
+
+### Cloud Testing (EKS, GKE, AKS)
+
+For testing on managed Kubernetes services:
+
+1. **Configure kubectl** for your target cluster:
+   - EKS: `aws eks update-kubeconfig --region <region> --name <cluster-name>`
+   - GKE: `gcloud container clusters get-credentials <cluster-name> --region <region>`
+   - AKS: `az aks get-credentials --resource-group <rg> --name <cluster-name>`
+
+2. **Set environment variables** for kubeconfig if needed:
+   ```bash
+   export KUBECONFIG_EKS=/path/to/eks/config
+   export KUBECONFIG_GKE=/path/to/gke/config
+   export KUBECONFIG_AKS=/path/to/aks/config
+   ```
+
+3. **Run the test script** for each cloud provider:
+   ```bash
+   # Test on EKS
+   bash scripts/test_deployment.sh eks
+
+   # Test on GKE
+   bash scripts/test_deployment.sh gke
+
+   # Test on AKS
+   bash scripts/test_deployment.sh aks
+   ```
+
+4. **Verify functionality**:
+   - The script deploys a test pod with the Pulsaar agent
+   - Tests all CLI commands: explore, read, stat, stream
+   - Tests both port-forward and apiserver-proxy connection methods
+   - Cleans up test resources automatically
+
+### Expected Results
+
+- All CLI commands should execute successfully without errors
+- File operations should respect path allowlists and size limits
+- Audit logs should be generated for each operation
+- TLS connections should be established securely
+- RBAC checks should pass for authorized users
+
+If any tests fail, check the troubleshooting guide for common issues.

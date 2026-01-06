@@ -35,13 +35,13 @@ if ! command -v kubectl >/dev/null 2>&1; then
     exit 1
 fi
 
-if ! command -v ./pulsaar/cli >/dev/null 2>&1; then
-    echo "./pulsaar/cli not found. Please build the CLI first."
+if ! command -v bin/cli >/dev/null 2>&1; then
+    echo "bin/cli not found. Please build the CLI first."
     exit 1
 fi
 
 # Copy agent binary to expected location for hostPath volume
-cp ./agent /tmp/agent
+cp bin/agent /tmp/agent
 chmod +x /tmp/agent
 
 # Deploy test resources
@@ -54,23 +54,23 @@ kubectl wait --for=condition=Ready pod/pulsaar-test-pod --timeout=60s
 
 # Test CLI functionality
 echo "Testing CLI explore..."
-./pulsaar/cli explore --pod pulsaar-test-pod --namespace default --path /app
+bin/cli explore --pod pulsaar-test-pod --namespace default --path /app
 
 echo "Testing CLI read..."
-./pulsaar/cli read --pod pulsaar-test-pod --namespace default --path /app/config.yaml
+bin/cli read --pod pulsaar-test-pod --namespace default --path /app/config.yaml
 
 echo "Testing CLI stat..."
-./pulsaar/cli stat --pod pulsaar-test-pod --namespace default --path /app/log.txt
+bin/cli stat --pod pulsaar-test-pod --namespace default --path /app/log.txt
 
 echo "Testing CLI stream..."
-./pulsaar/cli stream --pod pulsaar-test-pod --namespace default --path /app/log.txt
+bin/cli stream --pod pulsaar-test-pod --namespace default --path /app/log.txt
 
 # Test with apiserver proxy if supported
 echo "Testing CLI with apiserver proxy..."
-./pulsaar/cli explore --pod pulsaar-test-pod --namespace default --path /app --connection-method apiserver-proxy
+bin/cli explore --pod pulsaar-test-pod --namespace default --path /app --connection-method apiserver-proxy
 
 echo "Testing CLI read with apiserver proxy..."
-./pulsaar/cli read --pod pulsaar-test-pod --namespace default --path /app/config.yaml --connection-method apiserver-proxy
+bin/cli read --pod pulsaar-test-pod --namespace default --path /app/config.yaml --connection-method apiserver-proxy
 
 # Clean up
 echo "Cleaning up test resources..."
