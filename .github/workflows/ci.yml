@@ -29,8 +29,8 @@ jobs:
         if: ${{ secrets.CODECOV_TOKEN != '' }}
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-           file: ./coverage.out
-           fail_ci_if_error: false
+          file: ./coverage.out
+          fail_ci_if_error: false
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
