@@ -192,7 +192,7 @@ func isPathAllowed(path string, allowedRoots []string) bool {
 	cleanPath := filepath.Clean(path)
 	for _, root := range allowedRoots {
 		cleanRoot := filepath.Clean(root)
-		if cleanPath == cleanRoot || strings.HasPrefix(cleanPath, cleanRoot+"/") {
+		if cleanRoot == "/" || cleanPath == cleanRoot || strings.HasPrefix(cleanPath, cleanRoot+"/") {
 			return true
 		}
 	}
