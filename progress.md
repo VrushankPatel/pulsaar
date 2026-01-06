@@ -57,5 +57,7 @@
   - Optional audit aggregator sends structured JSON logs via HTTP POST
   - Certificate loading via env vars PULSAAR_TLS_CERT_FILE, PULSAAR_TLS_KEY_FILE, PULSAAR_TLS_CA_FILE for agent
   - Client certs via PULSAAR_CLIENT_CERT_FILE, PULSAAR_CLIENT_KEY_FILE, PULSAAR_CA_FILE for CLI
-  - Docker images tagged as vrushankpatel/pulsaar-{component}:latest
+   - Docker images tagged as vrushankpatel/pulsaar-{component}:latest
 
+
+### Next steps
