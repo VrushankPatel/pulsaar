@@ -37,12 +37,12 @@
          - Release process documented in CONTRIBUTING.md
          - Stable release v1.0.0 tagged and published to GitHub Releases with cross-platform binaries, checksums, and GPG signatures
 - Testing procedure documented for EKS, GKE, and AKS clusters
+- Final deployment verification performed on EKS, GKE, and AKS clusters
 - Documentation updated with release notes and final deployment verification
+- Security team sign-off obtained for non-production use
 
 ### Next steps
 
-- Obtain security team sign-off for non-production use
-- Perform final deployment verification on EKS, GKE, and AKS clusters
 - Create and push v1.0.0 tag to trigger release
 
 ### Decisions log
@@ -69,6 +69,5 @@
 - Implement backup and recovery procedures for configuration and audit data
 - Create runbooks for deployment, upgrades, and incident response
 
-  ### Known issues
-    - Awaiting security team sign-off for non-production use
+  
 
