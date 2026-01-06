@@ -34,8 +34,8 @@
    - Docker images built locally for agent, cli, webhook, and aggregator components
    - Production Docker images pushed to docker.io/vrushankpatel/pulsaar-{component}:latest
 
-    ### Last commit summary
-        - Pushed production Docker images to Docker Hub
+     ### Last commit summary
+         - Added support for testing Pulsaar deployment on EKS, GKE, AKS clusters
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -65,4 +65,4 @@
     - Awaiting security team sign-off for non-production use
 
 ### Next steps
-- Run test deployment on EKS, GKE, AKS to verify functionality
+- Perform security sign-off for production use
