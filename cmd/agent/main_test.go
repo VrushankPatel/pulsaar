@@ -127,16 +127,16 @@ func TestRateLimiting(t *testing.T) {
 func TestGetNamespace(t *testing.T) {
 	// Test with env var
 	original := os.Getenv("PULSAAR_NAMESPACE")
-	defer os.Setenv("PULSAAR_NAMESPACE", original)
+	defer func() { _ = os.Setenv("PULSAAR_NAMESPACE", original) }() //nolint:errcheck
 
-	os.Setenv("PULSAAR_NAMESPACE", "test-ns")
+	_ = os.Setenv("PULSAAR_NAMESPACE", "test-ns") //nolint:errcheck
 	ns := getNamespace()
 	if ns != "test-ns" {
 		t.Errorf("expected test-ns, got %s", ns)
 	}
 
 	// Clear env, test file
-	os.Setenv("PULSAAR_NAMESPACE", "")
+	_ = os.Setenv("PULSAAR_NAMESPACE", "") //nolint:errcheck
 	// Since we can't easily mock the file path, test that it returns "" when file not found
 	ns = getNamespace()
 	if ns != "" {
