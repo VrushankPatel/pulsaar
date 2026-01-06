@@ -37,9 +37,9 @@
 - Dependencies locked with go.sum for reproducible builds
 - Agent Health response version updated to v1.0.0
 - Webhook agent image configurable via PULSAAR_AGENT_IMAGE environment variable
+- Docker images built locally for agent, cli, webhook, and aggregator components
 
 ### Next steps
-- Build Docker images locally for agent, cli, webhook, and aggregator components
 - Build cross-platform release binaries with checksums and GPG signatures
 - Perform final deployment verification on EKS, GKE, and AKS clusters
 - Obtain security team sign-off for non production use
