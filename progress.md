@@ -28,6 +28,8 @@
  - Audit aggregator implemented for centralized logging integration, receiving audit logs from agents and forwarding to external systems
  - Comprehensive documentation created including API reference, deployment guides, and troubleshooting
 
+- Security scanning and dependency vulnerability checks added to CI/CD pipeline
+
 ### Last commit summary
     - Added security scanning and dependency vulnerability checks to CI/CD pipeline
 
