@@ -457,3 +457,162 @@ For testing on managed Kubernetes services:
 - RBAC checks should pass for authorized users
 
 If any tests fail, check the troubleshooting guide for common issues.
+
+## Final Deployment Verification
+
+After deploying Pulsaar in production, perform these verification steps to ensure everything is working correctly.
+
+### 1. Verify Agent Health
+
+Check that the Pulsaar agent is running and healthy:
+
+```bash
+# For embedded agent
+kubectl get pods -l app=your-app
+kubectl logs -l app=your-app -c pulsaar-agent
+
+# For sidecar injection
+kubectl get pods -n your-namespace
+kubectl logs -n your-namespace -l pulsaar.io/injected=true
+
+# Check agent health endpoint
+kubectl port-forward pod/your-pod 8443:8443
+curl -k https://localhost:8443/health
+```
+
+Expected output:
+```json
+{"ready":true,"version":"v1.0.0","status_message":"Agent ready"}
+```
+
+### 2. Test CLI Connectivity
+
+Verify the CLI can connect and perform operations:
+
+```bash
+# Test with port-forward (default)
+./cli explore --pod your-pod --namespace your-namespace --path /
+
+# Test with apiserver proxy
+./cli explore --pod your-pod --namespace your-namespace --connection-method apiserver-proxy --path /
+
+# Test file operations
+./cli stat --pod your-pod --namespace your-namespace --path /etc/hostname
+./cli read --pod your-pod --namespace your-namespace --path /etc/hostname
+```
+
+### 3. Verify Security Controls
+
+Ensure security features are working:
+
+```bash
+# Test path allowlist enforcement (should fail)
+./cli read --pod your-pod --namespace your-namespace --path /etc/shadow
+
+# Check audit logs are generated
+kubectl logs -l app=your-app -c pulsaar-agent | grep ReadFile
+```
+
+### 4. Verify TLS Configuration
+
+Confirm mTLS is properly configured:
+
+```bash
+# Check certificates are loaded
+kubectl exec your-pod -- env | grep PULSAAR_TLS
+
+# Verify TLS handshake (CLI should connect without errors)
+./cli explore --pod your-pod --namespace your-namespace --path /
+```
+
+### 5. Check Monitoring
+
+Ensure metrics are being exported:
+
+```bash
+# Port forward metrics port
+kubectl port-forward service/pulsaar-webhook 9090:9090 -n pulsaar-system
+
+# Query metrics
+curl http://localhost:9090/metrics | grep pulsaar
+```
+
+Expected metrics:
+- `pulsaar_operations_total`
+- `pulsaar_errors_total`
+- `pulsaar_file_size_bytes`
+
+### 6. Verify Audit Logging
+
+Check that audit logs are being generated and forwarded:
+
+```bash
+# Check agent logs for audit entries
+kubectl logs -l app=your-app -c pulsaar-agent | tail -10
+
+# If using aggregator, check aggregator logs
+kubectl logs -l app=pulsaar-aggregator -n pulsaar-system
+```
+
+### 7. Test High Availability (if deployed)
+
+For HA deployments, verify load balancing:
+
+```bash
+# Check multiple replicas
+kubectl get pods -l app=pulsaar-webhook -n pulsaar-system
+
+# Verify anti-affinity
+kubectl describe pods -l app=pulsaar-webhook -n pulsaar-system | grep "Node:"
+```
+
+### 8. RBAC Verification
+
+Test that RBAC is enforced:
+
+```bash
+# Switch to unauthorized user context
+kubectl config use-context unauthorized-user
+
+# This should fail with RBAC error
+./cli explore --pod your-pod --namespace your-namespace --path /
+```
+
+### 9. Performance Validation
+
+Run performance checks:
+
+```bash
+# Time file operations
+time ./cli read --pod your-pod --namespace your-namespace --path /large-file.log
+
+# Check resource usage
+kubectl top pods -l app=your-app
+```
+
+### 10. Backup Verification
+
+Test backup procedures:
+
+```bash
+# Run backup script
+bash scripts/backup_config.sh
+
+# Verify backup files exist
+ls -la backup-*.tar.gz
+```
+
+### Verification Checklist
+
+- [ ] Agent pods are running and healthy
+- [ ] CLI can connect via both port-forward and apiserver-proxy
+- [ ] File operations work within allowlists
+- [ ] Access is blocked for restricted paths
+- [ ] TLS connections are secure
+- [ ] Audit logs are generated for all operations
+- [ ] Prometheus metrics are available
+- [ ] RBAC controls access appropriately
+- [ ] High availability setup distributes load
+- [ ] Backup procedures work correctly
+
+If all checks pass, your Pulsaar deployment is ready for production use.

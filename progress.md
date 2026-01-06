@@ -37,10 +37,9 @@
          - Release process documented in CONTRIBUTING.md
          - Stable release v1.0.0 tagged and published to GitHub Releases with cross-platform binaries, checksums, and GPG signatures
 - Testing procedure documented for EKS, GKE, and AKS clusters
+- Documentation updated with release notes and final deployment verification
 
 ### Next steps
-
-- Update documentation with release notes and final deployment verification
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
