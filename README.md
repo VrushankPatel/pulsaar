@@ -137,6 +137,22 @@ Get file info:
 ./cli stat --pod my-pod --namespace default --path /app/data.txt
 ```
 
+Generate shell completion:
+
+```bash
+# Bash
+./cli completion bash > /etc/bash_completion.d/pulsaar
+
+# Zsh
+./cli completion zsh > "${fpath[1]}/_pulsaar"
+
+# Fish
+./cli completion fish > ~/.config/fish/completions/pulsaar.fish
+
+# PowerShell
+./cli completion powershell > pulsaar.ps1
+```
+
 ## Connection Methods
 
 ### Port Forward (default)

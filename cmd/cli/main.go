@@ -351,6 +351,77 @@ func main() {
 	rootCmd.AddCommand(streamCmd)
 	rootCmd.AddCommand(statCmd)
 
+	completionCmd := &cobra.Command{
+		Use:   "completion [bash|zsh|fish|powershell]",
+		Short: "Generate completion script",
+		Long: `To load completions:
+
+Bash:
+
+  $ source <(pulsaar completion bash)
+
+  # To load completions for each session, execute once:
+
+  # Linux:
+
+  $ pulsaar completion bash > /etc/bash_completion.d/pulsaar
+
+  # macOS:
+
+  $ pulsaar completion bash > /usr/local/etc/bash_completion.d/pulsaar
+
+Zsh:
+
+  # If shell completion is not already enabled in your environment,
+
+  # you will need to enable it.  You can execute the following once:
+
+  $ echo "autoload -U compinit; compinit" >> ~/.zshrc
+
+  # To load completions for each session, execute once:
+
+  $ pulsaar completion zsh > "${fpath[1]}/_pulsaar"
+
+  # You will need to start a new shell for this setup to take effect.
+
+fish:
+
+  $ pulsaar completion fish | source
+
+  # To load completions for each session, execute once:
+
+  $ pulsaar completion fish > ~/.config/fish/completions/pulsaar.fish
+
+PowerShell:
+
+  PS> pulsaar completion powershell | Out-String | Invoke-Expression
+
+  # To load completions for each session, execute once:
+
+  #    pulsaar completion powershell > pulsaar.ps1
+
+  # and source this file from your PowerShell profile.
+
+`,
+		DisableFlagsInUseLine: true,
+		ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
+		Args:                  cobra.ExactValidArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			switch args[0] {
+			case "bash":
+				cmd.Root().GenBashCompletion(cmd.OutOrStdout())
+			case "zsh":
+				cmd.Root().GenZshCompletion(cmd.OutOrStdout())
+			case "fish":
+				cmd.Root().GenFishCompletion(cmd.OutOrStdout(), true)
+			case "powershell":
+				cmd.Root().GenPowerShellCompletionWithDesc(cmd.OutOrStdout())
+			}
+		},
+	}
+
+	rootCmd.AddCommand(completionCmd)
+
 	rootCmd.Flags().String("connection-method", "port-forward", "Connection method: port-forward or apiserver-proxy")
 
 	if err := rootCmd.Execute(); err != nil {

@@ -37,13 +37,13 @@
   - Dependencies locked with go.sum for reproducible builds
    - Agent Health response version updated to v1.0.0 in main.go, test updated to v1.0.0
   - Webhook agent image configurable via PULSAAR_AGENT_IMAGE environment variable
-    - Security team sign-off obtained for non-production use (documented in docs/SECURITY_SIGNOFF_REQUEST.md)
+   - Security team sign-off obtained for non-production use (documented in docs/SECURITY_SIGNOFF_REQUEST.md)
 - Test deployment on EKS, GKE, and AKS clusters verified functionality
 - Implemented per-IP rate limiting for file operations to prevent abuse
+- Bash completion for CLI added
 
 ### Next steps
 
-- Add bash completion for CLI
 - Add man pages for CLI
 - Add support for custom path allowlists per namespace
 - Implement backup and recovery for audit logs
