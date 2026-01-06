@@ -19,28 +19,27 @@
 - CLI supports apiserver proxy connection path for connecting to agent without kubectl port-forward
 - RBAC enforced at control plane using TokenReview and SubjectAccessReview
 - Mutating webhook for sidecar injection implemented
-
 - Production deployment planning completed
 - Helm charts created for easy Kubernetes deployment with configurable TLS, RBAC, and monitoring options
 - Production monitoring with Prometheus metrics exported from agent and webhook
 - Audit aggregator implemented for centralized logging integration, receiving audit logs from agents and forwarding to external systems
-  - Comprehensive documentation created including API reference, deployment guides, and troubleshooting
-  - High availability deployment with multiple replicas and load balancing implemented in Helm chart and documentation
-
-   - Dependency vulnerability checks added to CI/CD pipeline
-   - Implemented backup and recovery procedures for configuration and audit data
-     - Runbooks created for deployment, upgrades, and incident response
-     - Security sign-off request document created
-         - Docker images built locally for agent, cli, webhook, and aggregator components
-         - CI/CD pipeline builds and pushes Docker images for agent, aggregator, cli, and webhook components
-         - Cross-platform release binaries built with checksums and GPG signatures on tags
-         - Release process documented in CONTRIBUTING.md
-         - Stable release v1.0.0 tagged with cross-platform binaries, checksums, and GPG signatures
- - v1.0.0 tag created and pushed
-  - Testing procedure documented for EKS, GKE, and AKS clusters
-    - Final deployment verification performed on EKS, GKE, and AKS clusters
-    - Documentation updated with release notes and final deployment verification
+- Comprehensive documentation created including API reference, deployment guides, and troubleshooting
+- High availability deployment with multiple replicas and load balancing implemented in Helm chart and documentation
+- Dependency vulnerability checks added to CI/CD pipeline
+- Implemented backup and recovery procedures for configuration and audit data
+- Runbooks created for deployment, upgrades, and incident response
+- Security sign-off request document created
+- Docker images built locally for agent, cli, webhook, and aggregator components
+- CI/CD pipeline builds and pushes Docker images for agent, aggregator, cli, and webhook components
+- Cross-platform release binaries built with checksums and GPG signatures on tags
+- Release process documented in CONTRIBUTING.md
+- Stable release v1.0.0 tagged with cross-platform binaries, checksums, and GPG signatures
+- v1.0.0 tag created and pushed
+- Testing procedure documented for EKS, GKE, and AKS clusters
+- Final deployment verification performed on EKS, GKE, and AKS clusters
+- Documentation updated with release notes and final deployment verification
 - Security team sign-off obtained for production use
+- Dependencies locked with go.sum for reproducible builds
 
 ### Next steps
 
