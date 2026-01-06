@@ -41,6 +41,8 @@
 
 ### Next steps
 
+- Test deployment on EKS, GKE, and AKS clusters to verify functionality
+
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
   - mTLS production requirement via cert-manager
