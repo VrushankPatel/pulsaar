@@ -88,6 +88,102 @@ signs:
   - artifacts: checksum
     args: ["--batch", "--local-user", "{{ .Env.GPG_FINGERPRINT }}", "--output", "${signature}", "--detach-sign", "${artifact}"]
 
+nfpms:
+  - id: agent
+    package_name: pulsaar-agent
+    builds: [agent]
+    formats:
+      - deb
+      - rpm
+    maintainer: Vrushank Patel <vrushankpatel@gmail.com>
+    description: Pulsaar Agent for read-only file exploration in Kubernetes pods
+    license: Apache-2.0
+  - id: cli
+    package_name: pulsaar-cli
+    builds: [cli]
+    formats:
+      - deb
+      - rpm
+    maintainer: Vrushank Patel <vrushankpatel@gmail.com>
+    description: Pulsaar CLI for connecting to agents
+    license: Apache-2.0
+  - id: webhook
+    package_name: pulsaar-webhook
+    builds: [webhook]
+    formats:
+      - deb
+      - rpm
+    maintainer: Vrushank Patel <vrushankpatel@gmail.com>
+    description: Pulsaar Mutating Webhook for sidecar injection
+    license: Apache-2.0
+  - id: aggregator
+    package_name: pulsaar-aggregator
+    builds: [aggregator]
+    formats:
+      - deb
+      - rpm
+    maintainer: Vrushank Patel <vrushankpatel@gmail.com>
+    description: Pulsaar Audit Aggregator for centralized logging
+    license: Apache-2.0
+
+brews:
+  - name: pulsaar-agent
+    repository:
+      owner: VrushankPatel
+      name: homebrew-pulsaar
+    commit_author:
+      name: goreleaserbot
+      email: goreleaser@carlosbecker.com
+    homepage: https://github.com/VrushankPatel/pulsaar
+    description: "Pulsaar Agent for read-only file exploration in Kubernetes pods"
+    license: "Apache-2.0"
+    dependencies:
+      - name: kubernetes-cli
+    install: |
+      bin.install "pulsaar-agent"
+  - name: pulsaar-cli
+    repository:
+      owner: VrushankPatel
+      name: homebrew-pulsaar
+    commit_author:
+      name: goreleaserbot
+      email: goreleaser@carlosbecker.com
+    homepage: https://github.com/VrushankPatel/pulsaar
+    description: "Pulsaar CLI for connecting to agents"
+    license: "Apache-2.0"
+    dependencies:
+      - name: kubernetes-cli
+    install: |
+      bin.install "pulsaar-cli"
+  - name: pulsaar-webhook
+    repository:
+      owner: VrushankPatel
+      name: homebrew-pulsaar
+    commit_author:
+      name: goreleaserbot
+      email: goreleaser@carlosbecker.com
+    homepage: https://github.com/VrushankPatel/pulsaar
+    description: "Pulsaar Mutating Webhook for sidecar injection"
+    license: "Apache-2.0"
+    dependencies:
+      - name: kubernetes-cli
+    install: |
+      bin.install "pulsaar-webhook"
+  - name: pulsaar-aggregator
+    repository:
+      owner: VrushankPatel
+      name: homebrew-pulsaar
+    commit_author:
+      name: goreleaserbot
+      email: goreleaser@carlosbecker.com
+    homepage: https://github.com/VrushankPatel/pulsaar
+    description: "Pulsaar Audit Aggregator for centralized logging"
+    license: "Apache-2.0"
+    dependencies:
+      - name: kubernetes-cli
+    install: |
+      bin.install "pulsaar-aggregator"
+
 release:
   github:
     owner: VrushankPatel
