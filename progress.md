@@ -35,7 +35,7 @@
 - v1.0.0 tag created and pushed
 - Testing procedure documented for EKS, GKE, and AKS clusters
  - Dependencies locked with go.sum for reproducible builds
- - Agent Health response version updated to v1.0.0
+  - Agent Health response version updated to v1.0.0 in main.go, test still has v0.1.0
  - Webhook agent image configurable via PULSAAR_AGENT_IMAGE environment variable
  - Docker images built locally for agent, cli, webhook, and aggregator components
  - Cross-platform release binaries built with checksums and GPG signatures
