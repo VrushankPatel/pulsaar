@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
-       with:
+        with:
          go-version: '1.23'
       - run: go test -coverprofile=coverage.out ./...
       - uses: codecov/codecov-action@v3
@@ -44,7 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
-       with:
+        with:
          go-version: '1.23'
       - run: |
           mkdir -p bin
@@ -63,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
-       with:
+        with:
          go-version: '1.23'
       - name: Download binaries
         uses: actions/download-artifact@v4
