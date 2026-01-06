@@ -208,7 +208,7 @@ export PULSAAR_AUDIT_AGGREGATOR_URL=https://your-log-aggregator.com/logs
 - Read-only operations only
 - Path allowlists enforced
 - File size limits (1MB default)
-- Rate limiting to prevent abuse
+- Per-IP rate limiting to prevent abuse
 - mTLS encryption required in production
 - RBAC integration
 - Audit logging for compliance

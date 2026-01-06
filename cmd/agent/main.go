@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
@@ -26,6 +27,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -39,7 +41,26 @@ type server struct {
 
 const maxReadSize int64 = 1024 * 1024 // 1MB
 
-var limiter = rate.NewLimiter(rate.Limit(10), 10) // 10 operations per second
+var limiters sync.Map // map[string]*rate.Limiter
+
+func getLimiterForIP(ctx context.Context) *rate.Limiter {
+	p, ok := peer.FromContext(ctx)
+	if !ok {
+		// Fallback: allow unlimited if can't determine peer
+		return rate.NewLimiter(rate.Inf, 1)
+	}
+	addr := p.Addr.String()
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		host = addr
+	}
+	limiter, ok := limiters.Load(host)
+	if !ok {
+		limiter = rate.NewLimiter(rate.Limit(10), 10) // 10 operations per second per IP
+		limiters.Store(host, limiter)
+	}
+	return limiter.(*rate.Limiter)
+}
 
 func loadOrGenerateCert() (tls.Certificate, error) {
 	certFile := os.Getenv("PULSAAR_TLS_CERT_FILE")
@@ -131,7 +152,7 @@ func auditLog(operation, path string) {
 }
 
 func (s *server) ListDirectory(ctx context.Context, req *api.ListRequest) (*api.ListResponse, error) {
-	if !limiter.Allow() {
+	if !getLimiterForIP(ctx).Allow() {
 		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
 	}
 	auditLog("ListDirectory", req.Path)
@@ -163,7 +184,7 @@ func (s *server) ListDirectory(ctx context.Context, req *api.ListRequest) (*api.
 }
 
 func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatResponse, error) {
-	if !limiter.Allow() {
+	if !getLimiterForIP(ctx).Allow() {
 		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
 	}
 	auditLog("Stat", req.Path)
@@ -188,7 +209,7 @@ func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatRespo
 }
 
 func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadResponse, error) {
-	if !limiter.Allow() {
+	if !getLimiterForIP(ctx).Allow() {
 		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
 	}
 	auditLog("ReadFile", req.Path)
@@ -221,7 +242,7 @@ func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadR
 }
 
 func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_StreamFileServer) error {
-	if !limiter.Allow() {
+	if !getLimiterForIP(stream.Context()).Allow() {
 		return status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
 	}
 	auditLog("StreamFile", req.Path)

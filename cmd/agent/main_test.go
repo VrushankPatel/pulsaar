@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"net"
 	"os"
 	"testing"
 
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -90,15 +92,18 @@ func TestHealth(t *testing.T) {
 }
 
 func TestRateLimiting(t *testing.T) {
-	// Temporarily set a low limit for testing
-	originalLimiter := limiter
-	limiter = rate.NewLimiter(rate.Limit(1), 1) // 1 per second
-	defer func() { limiter = originalLimiter }()
+	// Create a context with a peer IP
+	ctx := peer.NewContext(context.Background(), &peer.Peer{Addr: &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 12345}})
+	ip := "127.0.0.1"
+
+	// Temporarily set a low limit for this IP
+	limiters.Store(ip, rate.NewLimiter(rate.Limit(1), 1)) // 1 per second
+	defer limiters.Delete(ip)
 
 	s := &server{}
 
 	// First call should succeed
-	_, err := s.ListDirectory(context.Background(), &api.ListRequest{
+	_, err := s.ListDirectory(ctx, &api.ListRequest{
 		Path:         "/",
 		AllowedRoots: []string{"/"},
 	})
@@ -107,7 +112,7 @@ func TestRateLimiting(t *testing.T) {
 	}
 
 	// Second call immediately should fail due to rate limit
-	_, err = s.ListDirectory(context.Background(), &api.ListRequest{
+	_, err = s.ListDirectory(ctx, &api.ListRequest{
 		Path:         "/",
 		AllowedRoots: []string{"/"},
 	})
