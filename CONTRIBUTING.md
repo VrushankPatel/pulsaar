@@ -37,6 +37,7 @@ Thank you for your interest in contributing to Pulsaar! This document provides g
 - Ensure all tests pass before submitting
 - Test both success and error cases
 - Use table-driven tests where appropriate
+- Code coverage reports are generated and uploaded in CI
 
 ## Pull Request Guidelines
 
