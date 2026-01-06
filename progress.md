@@ -38,9 +38,9 @@
 - Agent Health response version updated to v1.0.0
 - Webhook agent image configurable via PULSAAR_AGENT_IMAGE environment variable
 - Docker images built locally for agent, cli, webhook, and aggregator components
+- Cross-platform release binaries built with checksums and GPG signatures
 
 ### Next steps
-- Build cross-platform release binaries with checksums and GPG signatures
 - Perform final deployment verification on local cluster
 - Obtain security team sign-off for non production use
 - Update documentation with release notes and final deployment verification
