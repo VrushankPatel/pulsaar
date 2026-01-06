@@ -40,10 +40,10 @@ spec:
             - name: grpc
               containerPort: 50051
               protocol: TCP
-           env:
-             - name: PULSAAR_AGENT_PORT
-               value: "50051"
-           resources: {}
+          env:
+            - name: PULSAAR_AGENT_PORT
+              value: "50051"
+          resources: {}
       {{- with .Values.agent.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

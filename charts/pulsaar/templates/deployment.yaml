@@ -56,7 +56,7 @@ spec:
               scheme: HTTPS
             initialDelaySeconds: 5
             periodSeconds: 10
-           resources: {}
+          resources: {}
           volumeMounts:
             - name: webhook-certs
               mountPath: /etc/webhook/certs
