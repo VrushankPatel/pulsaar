@@ -29,11 +29,12 @@
   - Comprehensive documentation created including API reference, deployment guides, and troubleshooting
   - High availability deployment with multiple replicas and load balancing implemented in Helm chart and documentation
 
- - Security scanning and dependency vulnerability checks added to CI/CD pipeline
- - Implemented backup and recovery procedures for configuration and audit data
+  - Security scanning and dependency vulnerability checks added to CI/CD pipeline
+  - Implemented backup and recovery procedures for configuration and audit data
+  - Runbooks created for deployment, upgrades, and incident response
 
  ### Last commit summary
-     - Implemented backup and recovery procedures for configuration and audit data
+     - Created runbooks for deployment, upgrades, and incident response
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -59,8 +60,5 @@
 - Implement backup and recovery procedures for configuration and audit data
 - Create runbooks for deployment, upgrades, and incident response
 
-### Known issues
-  - Security team adoption risk
-
- ### Next steps
- - Create runbooks for deployment, upgrades, and incident response
+ ### Known issues
+   - Security team adoption risk
