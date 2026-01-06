@@ -46,7 +46,7 @@ jobs:
         name: binaries
         path: bin/
 
-  build-images:
+    build-images:
     needs: build-binaries
     runs-on: ubuntu-latest
     steps:
