@@ -372,7 +372,7 @@ func runExplore(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	defer cleanup()
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client := api.NewPulsaarAgentClient(conn)
 
@@ -406,7 +406,7 @@ func runRead(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	defer cleanup()
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client := api.NewPulsaarAgentClient(conn)
 
@@ -444,7 +444,7 @@ func runStream(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	defer cleanup()
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client := api.NewPulsaarAgentClient(conn)
 
@@ -486,7 +486,7 @@ func runStat(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	defer cleanup()
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client := api.NewPulsaarAgentClient(conn)
 
