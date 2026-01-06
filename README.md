@@ -87,6 +87,12 @@ Apply the mutating webhook:
 kubectl apply -f manifests/webhook.yaml
 ```
 
+Set the agent image for injection (optional, defaults to `pulsaar/agent:latest`):
+
+```bash
+export PULSAAR_AGENT_IMAGE=your-registry/pulsaar-agent:v1.0
+```
+
 Annotate your pods for injection:
 
 ```yaml

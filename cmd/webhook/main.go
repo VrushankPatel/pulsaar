@@ -119,9 +119,13 @@ func mutatePod(pod *corev1.Pod) ([]byte, error) {
 	}
 
 	// Inject sidecar container
+	image := os.Getenv("PULSAAR_AGENT_IMAGE")
+	if image == "" {
+		image = "pulsaar/agent:latest"
+	}
 	sidecar := corev1.Container{
 		Name:  "pulsaar-agent",
-		Image: "pulsaar/agent:latest", // TODO: configurable
+		Image: image,
 		Ports: []corev1.ContainerPort{
 			{
 				ContainerPort: 50051,
