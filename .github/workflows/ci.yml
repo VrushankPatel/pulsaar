@@ -42,6 +42,7 @@ jobs:
         go-version: '1.25'
     - run: |
         go build -o bin/agent ./cmd/agent
+        go build -o bin/aggregator ./cmd/aggregator
         go build -o bin/cli ./cmd/cli
         go build -o bin/webhook ./cmd/webhook
     - uses: actions/upload-artifact@v4
@@ -64,16 +65,20 @@ jobs:
       run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
     - run: |
         docker build -f Dockerfile.agent -t vrushankpatel/pulsaar-agent:latest .
+        docker build -f Dockerfile.aggregator -t vrushankpatel/pulsaar-aggregator:latest .
         docker build -f Dockerfile.cli -t vrushankpatel/pulsaar-cli:latest .
         docker build -f Dockerfile.webhook -t vrushankpatel/pulsaar-webhook:latest .
         docker push vrushankpatel/pulsaar-agent:latest
+        docker push vrushankpatel/pulsaar-aggregator:latest
         docker push vrushankpatel/pulsaar-cli:latest
         docker push vrushankpatel/pulsaar-webhook:latest
         if [ -n "${{ env.TAG }}" ]; then
           docker tag vrushankpatel/pulsaar-agent:latest vrushankpatel/pulsaar-agent:${{ env.TAG }}
+          docker tag vrushankpatel/pulsaar-aggregator:latest vrushankpatel/pulsaar-aggregator:${{ env.TAG }}
           docker tag vrushankpatel/pulsaar-cli:latest vrushankpatel/pulsaar-cli:${{ env.TAG }}
           docker tag vrushankpatel/pulsaar-webhook:latest vrushankpatel/pulsaar-webhook:${{ env.TAG }}
           docker push vrushankpatel/pulsaar-agent:${{ env.TAG }}
+          docker push vrushankpatel/pulsaar-aggregator:${{ env.TAG }}
           docker push vrushankpatel/pulsaar-cli:${{ env.TAG }}
           docker push vrushankpatel/pulsaar-webhook:${{ env.TAG }}
         fi
