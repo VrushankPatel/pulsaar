@@ -222,7 +222,7 @@ func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_Stre
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to open file: %v", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	buf := make([]byte, chunkSize)
 	for {
