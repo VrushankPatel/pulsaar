@@ -52,3 +52,6 @@
   - Docker images tagged as vrushankpatel/pulsaar-{component}:latest
 
 ### Next steps
+- Deploy Pulsaar on EKS, GKE, and AKS clusters and verify functionality
+- Obtain security team sign off for production use
+- Publish stable release artifacts to GitHub Releases with signed binaries, checksums, reproducible builds, Debian packages, and Homebrew formulas
