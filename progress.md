@@ -43,7 +43,7 @@
 
 ### Next steps
 
-
+- Update version in agent Health response to v1.0.0
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
