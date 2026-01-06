@@ -41,6 +41,7 @@
 - Local deployment testing completed with kind cluster
 - Security team sign-off obtained for non-production use
 - Stable release artifacts publishing configured with signed binaries, checksums, reproducible builds, Debian packages, and Homebrew formulas
+- Stable release published to GitHub Releases with signed binaries, checksums, Debian packages, RPM, and Homebrew formulas
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -53,4 +54,3 @@
   - Docker images tagged as vrushankpatel/pulsaar-{component}:latest
 
 ### Next steps
-- Publish stable release to GitHub Releases with signed binaries, checksums, Debian packages, RPM, and Homebrew formulas
