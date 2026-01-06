@@ -41,6 +41,10 @@
 
 ### Next steps
 
+- Obtain security team sign-off for non-production use
+- Perform final deployment verification on EKS, GKE, and AKS clusters
+- Create and push v1.0.0 tag to trigger release
+
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
   - mTLS production requirement via cert-manager
