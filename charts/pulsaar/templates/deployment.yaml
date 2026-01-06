@@ -56,8 +56,7 @@ spec:
               scheme: HTTPS
             initialDelaySeconds: 5
             periodSeconds: 10
-          resources:
-            {{- toYaml .Values.webhook.resources | nindent 12 }}
+           resources: {}
           volumeMounts:
             - name: webhook-certs
               mountPath: /etc/webhook/certs
