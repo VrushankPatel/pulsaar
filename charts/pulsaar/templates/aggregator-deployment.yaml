@@ -55,17 +55,28 @@ spec:
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
-          resources:
-            {{- toYaml .Values.aggregator.resources | nindent 12 }}
-      {{- with .Values.aggregator.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.aggregator.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.aggregator.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+           resources:
+             {{- toYaml .Values.aggregator.resources | nindent 12 }}
+           volumeMounts:
+             {{- if .Values.aggregator.persistence.enabled }}
+             - name: audit-logs
+               mountPath: /var/log/pulsaar
+             {{- end }}
+       {{- if .Values.aggregator.persistence.enabled }}
+       volumes:
+         - name: audit-logs
+           persistentVolumeClaim:
+             claimName: {{ include "pulsaar.fullname" . }}-aggregator
+       {{- end }}
+       {{- with .Values.aggregator.nodeSelector }}
+       nodeSelector:
+         {{- toYaml . | nindent 8 }}
+       {{- end }}
+       {{- with .Values.aggregator.affinity }}
+       affinity:
+         {{- toYaml . | nindent 8 }}
+       {{- end }}
+       {{- with .Values.aggregator.tolerations }}
+       tolerations:
+         {{- toYaml . | nindent 8 }}
+       {{- end }}

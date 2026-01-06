@@ -41,3 +41,19 @@ func TestHandleAuditInvalidJSON(t *testing.T) {
 		t.Errorf("Expected status 400, got %d", w.Code)
 	}
 }
+
+func TestHandleHealth(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	w := httptest.NewRecorder()
+
+	handleHealth(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", w.Code)
+	}
+
+	expected := `{"status": "ok"}`
+	if w.Body.String() != expected {
+		t.Errorf("Expected body %s, got %s", expected, w.Body.String())
+	}
+}

@@ -1,0 +1,18 @@
+{{- if .Values.aggregator.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "pulsaar.fullname" . }}-aggregator
+  labels:
+    {{- include "pulsaar.labels" . | nindent 4 }}
+    app.kubernetes.io/component: aggregator
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.aggregator.persistence.size }}
+  {{- if .Values.aggregator.persistence.storageClass }}
+  storageClassName: {{ .Values.aggregator.persistence.storageClass }}
+  {{- end }}
+{{- end }}

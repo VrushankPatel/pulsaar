@@ -83,22 +83,57 @@ This script will restore secrets, Helm values, RBAC, and webhook configurations 
 
 ## Audit Data Backup
 
-Audit data is forwarded to external logging systems configured via `PULSAAR_EXTERNAL_LOG_URL` in the aggregator.
+Audit data is stored locally in the aggregator's persistent volume at `/var/log/pulsaar/audit.log` and forwarded to external logging systems configured via `PULSAAR_EXTERNAL_LOG_URL` in the aggregator.
 
-### Backup Procedures
+### Automated Backup Script
+
+Use the provided `scripts/backup_audit.sh` script to backup audit data:
+
+```bash
+./scripts/backup_audit.sh
+```
+
+This script will:
+- Locate the aggregator pod
+- Copy the audit log file from the persistent volume
+- Create timestamped backup files in `backups/` directory
+
+### Manual Backup Steps
 
 1. **External System Backup**: Follow the backup procedures of your external logging system (e.g., Elasticsearch snapshot, CloudWatch export, etc.)
 
-2. **Aggregator Logs**: If the aggregator is logging to stdout, ensure Kubernetes logs are backed up:
+2. **Local Audit Logs**: Backup the audit log file from the aggregator pod:
    ```bash
-   kubectl logs -l app.kubernetes.io/name=pulsaar,app.kubernetes.io/component=aggregator --since=24h > aggregator_logs_backup.txt
+   AGGREGATOR_POD=$(kubectl get pods -l app.kubernetes.io/name=pulsaar,app.kubernetes.io/component=aggregator -o jsonpath='{.items[0].metadata.name}')
+   kubectl cp "${AGGREGATOR_POD}:/var/log/pulsaar/audit.log" audit_logs_backup.txt
    ```
 
-### Recovery Procedures
+3. **Aggregator stdout Logs**: If additional logging is needed, backup Kubernetes logs:
+   ```bash
+   kubectl logs -l app.kubernetes.io/name=pulsaar,app.kubernetes.io/component=aggregator --since=24h > aggregator_stdout_backup.txt
+   ```
+
+### Automated Recovery Script
+
+Use the provided `scripts/recovery_audit.sh` script to recover audit data:
+
+```bash
+./scripts/recovery_audit.sh <backup_timestamp>
+```
+
+This script will restore the audit log file to the aggregator's persistent volume from the specified backup.
+
+### Manual Recovery Steps
 
 1. Restore external logging system from its backups.
 
-2. If aggregator logs were backed up, they can be re-ingested if needed.
+2. Restore local audit logs to the aggregator pod:
+   ```bash
+   AGGREGATOR_POD=$(kubectl get pods -l app.kubernetes.io/name=pulsaar,app.kubernetes.io/component=aggregator -o jsonpath='{.items[0].metadata.name}')
+   kubectl cp audit_logs_backup.txt "${AGGREGATOR_POD}:/var/log/pulsaar/audit.log"
+   ```
+
+3. If aggregator stdout logs were backed up, they can be re-ingested into the external system if needed.
 
 ## Disaster Recovery
 

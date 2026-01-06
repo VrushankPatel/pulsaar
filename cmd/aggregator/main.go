@@ -3,10 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 type AuditLog struct {
@@ -14,6 +16,29 @@ type AuditLog struct {
 	Operation string `json:"operation"`
 	Path      string `json:"path"`
 	AgentID   string `json:"agent_id,omitempty"`
+}
+
+var auditFile *os.File
+
+func initAuditFile() error {
+	auditLogPath := os.Getenv("PULSAAR_AUDIT_LOG_PATH")
+	if auditLogPath == "" {
+		auditLogPath = "/var/log/pulsaar/audit.log"
+	}
+
+	// Ensure directory exists
+	dir := filepath.Dir(auditLogPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create audit log directory: %v", err)
+	}
+
+	var err error
+	auditFile, err = os.OpenFile(auditLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open audit log file: %v", err)
+	}
+
+	return nil
 }
 
 func handleAudit(w http.ResponseWriter, r *http.Request) {
@@ -37,6 +62,16 @@ func handleAudit(w http.ResponseWriter, r *http.Request) {
 	// Log to stdout
 	log.Printf("Received audit: %+v", audit)
 
+	// Write to file
+	if auditFile != nil {
+		if _, err := auditFile.WriteString(string(body) + "\n"); err != nil {
+			log.Printf("Failed to write to audit log file: %v", err)
+		}
+		if err := auditFile.Sync(); err != nil {
+			log.Printf("Failed to sync audit log file: %v", err)
+		}
+	}
+
 	// Send to external system if configured
 	if externalURL := os.Getenv("PULSAAR_EXTERNAL_LOG_URL"); externalURL != "" {
 		resp, err := http.Post(externalURL, "application/json", bytes.NewBuffer(body))
@@ -52,13 +87,25 @@ func handleAudit(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func handleHealth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, `{"status": "ok"}`)
+}
+
 func main() {
+	if err := initAuditFile(); err != nil {
+		log.Fatalf("Failed to initialize audit file: %v", err)
+	}
+	defer auditFile.Close()
+
 	port := os.Getenv("PULSAAR_AGGREGATOR_PORT")
 	if port == "" {
 		port = "8080"
 	}
 
 	http.HandleFunc("/audit", handleAudit)
+	http.HandleFunc("/health", handleHealth)
 
 	log.Printf("Audit aggregator listening on :%s", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {

@@ -31,15 +31,13 @@
 - Security sign-off request document created
 - CI/CD pipeline builds and pushes Docker images for agent, aggregator, cli, and webhook components
 - Release process documented in CONTRIBUTING.md
-
- - Implemented per-IP rate limiting for file operations to prevent abuse
-  - Bash completion for CLI added
-  - Man pages for CLI added
-  - Added support for custom path allowlists per namespace via ConfigMap
+- Implemented per-IP rate limiting for file operations to prevent abuse
+- Bash completion for CLI added
+- Man pages for CLI added
+- Added support for custom path allowlists per namespace via ConfigMap
+- Audit logs stored locally in aggregator persistent volume for backup and recovery
 
 ### Next steps
-
-  - Implement backup and recovery for audit logs
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
