@@ -27,14 +27,12 @@
   - Comprehensive documentation created including API reference, deployment guides, and troubleshooting
   - High availability deployment with multiple replicas and load balancing implemented in Helm chart and documentation
 
-   - Security scanning and dependency vulnerability checks added to CI/CD pipeline
+   - Dependency vulnerability checks added to CI/CD pipeline
    - Implemented backup and recovery procedures for configuration and audit data
-    - Runbooks created for deployment, upgrades, and incident response
-    - Security sign-off request document created
-       - Docker images built locally for agent, cli, webhook, and aggregator components
-       - CI/CD pipeline builds and pushes Docker images for agent, aggregator, cli, and webhook components
-      - Security scanning and dependency vulnerability checks added to CI/CD pipeline
-      - Added support for testing Pulsaar deployment on EKS, GKE, AKS clusters
+     - Runbooks created for deployment, upgrades, and incident response
+     - Security sign-off request document created
+        - Docker images built locally for agent, cli, webhook, and aggregator components
+        - CI/CD pipeline builds and pushes Docker images for agent, aggregator, cli, and webhook components
 
 ### Next steps
 - Project complete
@@ -49,7 +47,7 @@
   - Client certs via PULSAAR_CLIENT_CERT_FILE, PULSAAR_CLIENT_KEY_FILE, PULSAAR_CA_FILE for CLI
   - Docker images tagged as vrushankpatel/pulsaar-{component}:latest
 
-- Added gosec for code security scanning and govulncheck for Go dependency vulnerability checks in CI/CD
+
 
 ### Production Deployment Plan
 - Build and push production Docker images for agent, CLI, and webhook components to a container registry
