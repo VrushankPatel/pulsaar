@@ -39,23 +39,40 @@ builds:
       - -X main.version={{.Version}}
       - -X main.commit={{.Commit}}
       - -X main.date={{.Date}}
-  - id: webhook
-    main: ./cmd/webhook
-    binary: pulsaar-webhook
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - linux
-      - windows
-      - darwin
-    goarch:
-      - amd64
-      - arm64
-    ldflags:
-      - -s -w
-      - -X main.version={{.Version}}
-      - -X main.commit={{.Commit}}
-      - -X main.date={{.Date}}
+   - id: webhook
+     main: ./cmd/webhook
+     binary: pulsaar-webhook
+     env:
+       - CGO_ENABLED=0
+     goos:
+       - linux
+       - windows
+       - darwin
+     goarch:
+       - amd64
+       - arm64
+     ldflags:
+       - -s -w
+       - -X main.version={{.Version}}
+       - -X main.commit={{.Commit}}
+       - -X main.date={{.Date}}
+   - id: aggregator
+     main: ./cmd/aggregator
+     binary: pulsaar-aggregator
+     env:
+       - CGO_ENABLED=0
+     goos:
+       - linux
+       - windows
+       - darwin
+     goarch:
+       - amd64
+       - arm64
+     ldflags:
+       - -s -w
+       - -X main.version={{.Version}}
+       - -X main.commit={{.Commit}}
+       - -X main.date={{.Date}}
 
 archives:
   - format: tar.gz
@@ -82,3 +99,14 @@ release:
   github:
     owner: VrushankPatel
     name: pulsaar
+
+signs:
+  - artifacts: all
+    args:
+      - --batch
+      - --local-user
+      - "{{ .Env.GPG_FINGERPRINT }}"
+      - --output
+      - "${signature}"
+      - --detach-sign
+      - "${artifact}"

@@ -45,6 +45,20 @@ Thank you for your interest in contributing to Pulsaar! This document provides g
 - Ensure CI checks pass
 - Be open to feedback and iterate on your changes
 
+## Releases
+
+To create a new release:
+
+1. Ensure all changes are committed and tested
+2. Tag the commit: `git tag vX.Y.Z`
+3. Push the tag: `git push origin vX.Y.Z`
+4. The CI pipeline will automatically:
+   - Build cross-platform binaries (Linux, macOS Intel/Apple Silicon, Windows)
+   - Generate checksums and GPG signatures
+   - Publish release assets to GitHub Releases
+
+Note: GPG signing requires the `GPG_PRIVATE_KEY` secret to be configured in the repository settings.
+
 ## Security Considerations
 
 Pulsaar handles sensitive file access in Kubernetes environments. Please be mindful of security implications in your contributions. All changes should maintain the read-only, audited nature of the system.
