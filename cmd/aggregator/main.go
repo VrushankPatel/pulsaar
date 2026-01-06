@@ -96,7 +96,7 @@ func handleAudit(w http.ResponseWriter, r *http.Request) {
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if _, err := fmt.Fprintf(w, `{"status": "ok"}`); err != nil {
+	if _, err := fmt.Fprintf(w, `{"status": "ok", "version": "%s", "commit": "%s", "date": "%s"}`, version, commit, date); err != nil {
 		log.Printf("Error writing health response: %v", err)
 	}
 }

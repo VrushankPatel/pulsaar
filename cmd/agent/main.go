@@ -374,6 +374,8 @@ func (s *server) Health(ctx context.Context, req *emptypb.Empty) (*api.HealthRes
 		Ready:         true,
 		Version:       version,
 		StatusMessage: "Agent ready",
+		Commit:        commit,
+		Date:          date,
 	}, nil
 }
 

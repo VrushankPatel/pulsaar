@@ -34,8 +34,9 @@ func init() {
 func main() {
 	http.HandleFunc("/mutate", handleMutate)
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("OK"))
+		_, _ = fmt.Fprintf(w, `{"status": "ok", "version": "%s", "commit": "%s", "date": "%s"}`, version, commit, date)
 	})
 	http.Handle("/metrics", promhttp.Handler())
 

@@ -52,7 +52,7 @@ func TestHandleHealth(t *testing.T) {
 		t.Errorf("Expected status 200, got %d", w.Code)
 	}
 
-	expected := `{"status": "ok"}`
+	expected := `{"status": "ok", "version": "dev", "commit": "none", "date": "unknown"}`
 	if w.Body.String() != expected {
 		t.Errorf("Expected body %s, got %s", expected, w.Body.String())
 	}

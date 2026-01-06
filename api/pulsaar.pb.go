@@ -476,6 +476,8 @@ type HealthResponse struct {
 	Ready         bool                   `protobuf:"varint,1,opt,name=ready,proto3" json:"ready,omitempty"`
 	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
 	StatusMessage string                 `protobuf:"bytes,3,opt,name=status_message,json=statusMessage,proto3" json:"status_message,omitempty"`
+	Commit        string                 `protobuf:"bytes,4,opt,name=commit,proto3" json:"commit,omitempty"`
+	Date          string                 `protobuf:"bytes,5,opt,name=date,proto3" json:"date,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -527,6 +529,20 @@ func (x *HealthResponse) GetVersion() string {
 func (x *HealthResponse) GetStatusMessage() string {
 	if x != nil {
 		return x.StatusMessage
+	}
+	return ""
+}
+
+func (x *HealthResponse) GetCommit() string {
+	if x != nil {
+		return x.Commit
+	}
+	return ""
+}
+
+func (x *HealthResponse) GetDate() string {
+	if x != nil {
+		return x.Date
 	}
 	return ""
 }

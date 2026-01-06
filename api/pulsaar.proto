@@ -55,6 +55,8 @@ message HealthResponse {
   bool ready = 1;
   string version = 2;
   string status_message = 3;
+  string commit = 4;
+  string date = 5;
 }
 
 service PulsaarAgent {
