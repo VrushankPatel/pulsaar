@@ -41,10 +41,9 @@
 - Security team sign-off obtained for production use
 - Dependencies locked with go.sum for reproducible builds
 - Agent Health response version updated to v1.0.0
+- Webhook agent image configurable via PULSAAR_AGENT_IMAGE environment variable
 
 ### Next steps
-
-- Make webhook agent image configurable via PULSAAR_AGENT_IMAGE environment variable
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
