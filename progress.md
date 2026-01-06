@@ -38,13 +38,13 @@
 - Agent Health response version updated to v1.0.0
 - Webhook agent image configurable via PULSAAR_AGENT_IMAGE environment variable
 - Docker images built locally for agent, cli, webhook, and aggregator components
-- Cross-platform release binaries built with checksums and GPG signatures
-- Final deployment verification performed on local cluster (binaries built, validation passed)
-- Security team sign-off obtained for non production use
-- Documentation updated with release notes and final deployment verification
 
 ### Next steps
-- Project completed successfully - all features implemented and released as v1.0.0
+- Build cross-platform release binaries with checksums and GPG signatures
+- Perform final deployment verification on local cluster
+- Obtain security team sign-off for non production use
+- Update documentation with release notes and final deployment verification
+- Release v1.0.0
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
