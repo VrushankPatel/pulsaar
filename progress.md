@@ -38,7 +38,7 @@
 - Testing procedure documented for EKS, GKE, and AKS clusters
 - Final deployment verification performed on EKS, GKE, and AKS clusters
 - Documentation updated with release notes and final deployment verification
-- Security team sign-off obtained for production use
+- Security team sign-off obtained for non production use
 - Dependencies locked with go.sum for reproducible builds
 - Agent Health response version updated to v1.0.0
 - Webhook agent image configurable via PULSAAR_AGENT_IMAGE environment variable
