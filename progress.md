@@ -46,6 +46,7 @@
 - README.md updated to reflect Apache License 2.0 instead of TBD
 
 ### Next steps
+- Update manifests/webhook.yaml with correct Docker image (vrushankpatel/pulsaar-webhook:latest) and replace placeholder CA bundle with actual CA bundle
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
