@@ -42,6 +42,7 @@ type server struct {
 const maxReadSize int64 = 1024 * 1024 // 1MB
 
 var limiters sync.Map // map[string]*rate.Limiter
+var configuredAllowedRoots []string
 
 func getLimiterForIP(ctx context.Context) *rate.Limiter {
 	p, ok := peer.FromContext(ctx)
@@ -119,6 +120,18 @@ func loadCACertPool() (*x509.CertPool, error) {
 	return caCertPool, nil
 }
 
+func initConfiguredAllowedRoots() {
+	roots := os.Getenv("PULSAAR_ALLOWED_ROOTS")
+	if roots == "" {
+		configuredAllowedRoots = []string{"/"}
+	} else {
+		configuredAllowedRoots = strings.Split(roots, ",")
+		for i, root := range configuredAllowedRoots {
+			configuredAllowedRoots[i] = strings.TrimSpace(root)
+		}
+	}
+}
+
 func isPathAllowed(path string, allowedRoots []string) bool {
 	cleanPath := filepath.Clean(path)
 	for _, root := range allowedRoots {
@@ -156,7 +169,11 @@ func (s *server) ListDirectory(ctx context.Context, req *api.ListRequest) (*api.
 		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
 	}
 	auditLog("ListDirectory", req.Path)
-	if !isPathAllowed(req.Path, req.AllowedRoots) {
+	allowedRoots := req.AllowedRoots
+	if len(allowedRoots) == 0 {
+		allowedRoots = configuredAllowedRoots
+	}
+	if !isPathAllowed(req.Path, allowedRoots) {
 		return nil, status.Errorf(codes.PermissionDenied, "path not allowed")
 	}
 
@@ -188,7 +205,11 @@ func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatRespo
 		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
 	}
 	auditLog("Stat", req.Path)
-	if !isPathAllowed(req.Path, req.AllowedRoots) {
+	allowedRoots := req.AllowedRoots
+	if len(allowedRoots) == 0 {
+		allowedRoots = configuredAllowedRoots
+	}
+	if !isPathAllowed(req.Path, allowedRoots) {
 		return nil, status.Errorf(codes.PermissionDenied, "path not allowed")
 	}
 
@@ -213,7 +234,11 @@ func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadR
 		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
 	}
 	auditLog("ReadFile", req.Path)
-	if !isPathAllowed(req.Path, req.AllowedRoots) {
+	allowedRoots := req.AllowedRoots
+	if len(allowedRoots) == 0 {
+		allowedRoots = configuredAllowedRoots
+	}
+	if !isPathAllowed(req.Path, allowedRoots) {
 		return nil, status.Errorf(codes.PermissionDenied, "path not allowed")
 	}
 
@@ -246,7 +271,11 @@ func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_Stre
 		return status.Errorf(codes.ResourceExhausted, "rate limit exceeded")
 	}
 	auditLog("StreamFile", req.Path)
-	if !isPathAllowed(req.Path, req.AllowedRoots) {
+	allowedRoots := req.AllowedRoots
+	if len(allowedRoots) == 0 {
+		allowedRoots = configuredAllowedRoots
+	}
+	if !isPathAllowed(req.Path, allowedRoots) {
 		return status.Errorf(codes.PermissionDenied, "path not allowed")
 	}
 
@@ -293,6 +322,8 @@ func (s *server) Health(ctx context.Context, req *emptypb.Empty) (*api.HealthRes
 }
 
 func main() {
+	initConfiguredAllowedRoots()
+
 	cert, err := loadOrGenerateCert()
 	if err != nil {
 		log.Fatalf("failed to load or generate cert: %v", err)

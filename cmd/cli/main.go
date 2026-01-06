@@ -459,7 +459,7 @@ func runExplore(cmd *cobra.Command, args []string) error {
 
 	resp, err := client.ListDirectory(context.Background(), &api.ListRequest{
 		Path:         path,
-		AllowedRoots: []string{"/"},
+		AllowedRoots: []string{},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to list directory: %v", err)
@@ -495,7 +495,7 @@ func runRead(cmd *cobra.Command, args []string) error {
 		Path:         path,
 		Offset:       0,
 		Length:       0, // read up to max
-		AllowedRoots: []string{"/"},
+		AllowedRoots: []string{},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to read file: %v", err)
@@ -532,7 +532,7 @@ func runStream(cmd *cobra.Command, args []string) error {
 	stream, err := client.StreamFile(context.Background(), &api.StreamRequest{
 		Path:         path,
 		ChunkSize:    chunkSize,
-		AllowedRoots: []string{"/"},
+		AllowedRoots: []string{},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to stream file: %v", err)
