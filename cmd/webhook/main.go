@@ -145,6 +145,14 @@ func mutatePod(pod *corev1.Pod) ([]byte, error) {
 				Name:  "PULSAAR_TLS_KEY_FILE",
 				Value: "/etc/pulsaar/tls/tls.key",
 			},
+			{
+				Name:  "PULSAAR_POD_NAME",
+				Value: pod.Name,
+			},
+			{
+				Name:  "PULSAAR_NAMESPACE",
+				Value: pod.Namespace,
+			},
 		},
 		VolumeMounts: []corev1.VolumeMount{
 			{

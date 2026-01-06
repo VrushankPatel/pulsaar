@@ -36,6 +36,7 @@
 - Bash completion for CLI added
 - Man pages for CLI added
 - Added support for custom path allowlists per namespace via ConfigMap
+- Implemented per-pod allowlist configuration via pod annotations
 - Audit logs stored locally in aggregator persistent volume for backup and recovery
 - Coverage report exporting added in CI
 - Helm chart bugs fixed for proper deployment on Kubernetes clusters
@@ -46,7 +47,6 @@
 
 
 ### Next steps
-- Implement per-pod allowlist configuration via pod annotations
 - Add binary file detection and user warnings in CLI
 - Enhance error handling with more descriptive messages
 - Add CLI command for health check of agents

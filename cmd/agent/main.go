@@ -131,6 +131,14 @@ func loadCACertPool() (*x509.CertPool, error) {
 
 func initConfiguredAllowedRoots() {
 	namespace := getNamespace()
+	podName := os.Getenv("PULSAAR_POD_NAME")
+	if namespace != "" && podName != "" {
+		roots := loadAllowedRootsFromPodAnnotations(namespace, podName)
+		if roots != nil {
+			configuredAllowedRoots = roots
+			return
+		}
+	}
 	if namespace != "" {
 		roots := loadAllowedRootsFromConfigMap(namespace)
 		if roots != nil {
@@ -175,6 +183,33 @@ func loadAllowedRootsFromConfigMap(namespace string) []string {
 		return nil
 	}
 	rootsStr, ok := cm.Data["allowed-roots"]
+	if !ok {
+		return nil
+	}
+	if rootsStr == "" {
+		return []string{}
+	}
+	roots := strings.Split(rootsStr, ",")
+	for i, root := range roots {
+		roots[i] = strings.TrimSpace(root)
+	}
+	return roots
+}
+
+func loadAllowedRootsFromPodAnnotations(namespace, podName string) []string {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil
+	}
+	pod, err := clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+	if err != nil {
+		return nil
+	}
+	rootsStr, ok := pod.Annotations["pulsaar.io/allowed-roots"]
 	if !ok {
 		return nil
 	}

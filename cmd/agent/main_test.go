@@ -152,3 +152,12 @@ func TestLoadAllowedRootsFromConfigMap(t *testing.T) {
 		t.Errorf("expected nil when no cluster, got %v", roots)
 	}
 }
+
+func TestLoadAllowedRootsFromPodAnnotations(t *testing.T) {
+	// Since this requires a k8s cluster, skip if not available
+	// In CI, it might not be, so just test that it returns nil when no cluster
+	roots := loadAllowedRootsFromPodAnnotations("default", "test-pod")
+	if roots != nil {
+		t.Errorf("expected nil when no cluster, got %v", roots)
+	}
+}

@@ -213,6 +213,29 @@ export PULSAAR_CLIENT_KEY_FILE=/etc/ssl/private/client.key
 export PULSAAR_CA_FILE=/etc/ssl/certs/ca.crt
 ```
 
+## Path Allowlist Configuration
+
+The agent enforces path allowlists to restrict file access. Configuration is checked in this order:
+
+1. **Pod annotations** (highest priority): Set `pulsaar.io/allowed-roots` annotation on the pod with comma-separated paths
+2. **Namespace ConfigMap**: Create a ConfigMap named `pulsaar-config` in the namespace with `allowed-roots` key
+3. **Environment variable**: Set `PULSAAR_ALLOWED_ROOTS` with comma-separated paths
+4. **Default**: `/` (allows all paths)
+
+Example pod annotation:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    pulsaar.io/allowed-roots: "/app,/tmp"
+spec:
+  containers:
+  - name: app
+    image: your-app
+```
+
 ## Audit Logging
 
 All file operations are logged to stdout in JSON format:
