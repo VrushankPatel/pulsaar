@@ -262,7 +262,11 @@ func TestEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("failed to remove temp dir: %v", err)
+		}
+	}()
 
 	// Create some files
 	err = os.WriteFile(filepath.Join(tempDir, "file1.txt"), []byte("content1"), 0644)
@@ -340,7 +344,11 @@ func TestReadEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("failed to remove temp dir: %v", err)
+		}
+	}()
 
 	// Create a file with content
 	content := "Hello, this is test content for reading."
@@ -412,7 +420,11 @@ func TestStreamEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("failed to remove temp dir: %v", err)
+		}
+	}()
 
 	// Create a file with content larger than chunk size
 	content := "Hello, this is test content for streaming. " + strings.Repeat("More content. ", 100)
@@ -492,7 +504,11 @@ func TestStatEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("failed to remove temp dir: %v", err)
+		}
+	}()
 
 	// Create a file
 	err = os.WriteFile(filepath.Join(tempDir, "stat.txt"), []byte("stat content"), 0644)
@@ -658,7 +674,11 @@ func TestMTLSCertificateLoading(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("failed to remove temp dir: %v", err)
+		}
+	}()
 
 	// Write certs to files
 	caCertFile := filepath.Join(tempDir, "ca.crt")
@@ -781,7 +801,11 @@ func TestMTLSEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("failed to remove temp dir: %v", err)
+		}
+	}()
 
 	// Write certs to files
 	caCertFile := filepath.Join(tempDir, "ca.crt")
