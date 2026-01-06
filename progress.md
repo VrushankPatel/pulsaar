@@ -33,10 +33,10 @@
      - Security sign-off request document created
          - Docker images built locally for agent, cli, webhook, and aggregator components
          - CI/CD pipeline builds and pushes Docker images for agent, aggregator, cli, and webhook components
-         - Cross-platform release binaries built and published to GitHub Releases with checksums and GPG signatures on tags
+         - Cross-platform release binaries built with checksums and GPG signatures on tags
          - Release process documented in CONTRIBUTING.md
-         - Stable release v1.0.0 tagged and published to GitHub Releases with cross-platform binaries, checksums, and GPG signatures
- - v1.0.0 tag created and pushed to trigger release
+         - Stable release v1.0.0 tagged with cross-platform binaries, checksums, and GPG signatures
+ - v1.0.0 tag created and pushed
   - Testing procedure documented for EKS, GKE, and AKS clusters
     - Final deployment verification performed on EKS, GKE, and AKS clusters
     - Documentation updated with release notes and final deployment verification
