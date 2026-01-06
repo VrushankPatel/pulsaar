@@ -68,15 +68,15 @@ jobs:
           docker build -f Dockerfile.aggregator -t vrushankpatel/pulsaar-aggregator:latest .
           docker build -f Dockerfile.cli -t vrushankpatel/pulsaar-cli:latest .
           docker build -f Dockerfile.webhook -t vrushankpatel/pulsaar-webhook:latest .
-          if [ -n "${{ env.TAG }}" ]; then
-            docker tag vrushankpatel/pulsaar-agent:latest vrushankpatel/pulsaar-agent:${{ env.TAG }}
-            docker tag vrushankpatel/pulsaar-aggregator:latest vrushankpatel/pulsaar-aggregator:${{ env.TAG }}
-            docker tag vrushankpatel/pulsaar-cli:latest vrushankpatel/pulsaar-cli:${{ env.TAG }}
-            docker tag vrushankpatel/pulsaar-webhook:latest vrushankpatel/pulsaar-webhook:${{ env.TAG }}
-            docker push vrushankpatel/pulsaar-agent:${{ env.TAG }}
-            docker push vrushankpatel/pulsaar-aggregator:${{ env.TAG }}
-            docker push vrushankpatel/pulsaar-cli:${{ env.TAG }}
-            docker push vrushankpatel/pulsaar-webhook:${{ env.TAG }}
+          if [ -n "$TAG" ]; then
+            docker tag vrushankpatel/pulsaar-agent:latest vrushankpatel/pulsaar-agent:$TAG
+            docker tag vrushankpatel/pulsaar-aggregator:latest vrushankpatel/pulsaar-aggregator:$TAG
+            docker tag vrushankpatel/pulsaar-cli:latest vrushankpatel/pulsaar-cli:$TAG
+            docker tag vrushankpatel/pulsaar-webhook:latest vrushankpatel/pulsaar-webhook:$TAG
+            docker push vrushankpatel/pulsaar-agent:$TAG
+            docker push vrushankpatel/pulsaar-aggregator:$TAG
+            docker push vrushankpatel/pulsaar-cli:$TAG
+            docker push vrushankpatel/pulsaar-webhook:$TAG
           fi
 
   release:
