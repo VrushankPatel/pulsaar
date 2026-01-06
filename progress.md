@@ -29,7 +29,7 @@
  - Comprehensive documentation created including API reference, deployment guides, and troubleshooting
 
 ### Last commit summary
-    - Created comprehensive documentation including API reference, deployment guides, and troubleshooting
+    - Added security scanning and dependency vulnerability checks to CI/CD pipeline
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -40,6 +40,8 @@
   - Certificate loading via env vars PULSAAR_TLS_CERT_FILE, PULSAAR_TLS_KEY_FILE, PULSAAR_TLS_CA_FILE for agent
   - Client certs via PULSAAR_CLIENT_CERT_FILE, PULSAAR_CLIENT_KEY_FILE, PULSAAR_CA_FILE for CLI
   - Docker images tagged as vrushankpatel/pulsaar-{component}:latest
+
+- Added gosec for code security scanning, govulncheck for Go dependency vulnerability checks, and Trivy for container image vulnerability scanning in CI/CD
 
 ### Production Deployment Plan
 - Build and push production Docker images for agent, CLI, and webhook components to a container registry
@@ -57,7 +59,6 @@
   - Security team adoption risk
 
 ### Next steps
-- Add security scanning and dependency vulnerability checks
 - Plan for high availability deployment with multiple replicas and load balancing
 - Implement backup and recovery procedures for configuration and audit data
 - Create runbooks for deployment, upgrades, and incident response
