@@ -39,10 +39,10 @@
 - Coverage report exporting added in CI
 - Helm chart bugs fixed for proper deployment on Kubernetes clusters
 - Local deployment testing completed with kind cluster
+- Security team sign-off obtained for non-production use
 
 ### Next steps
 
-- Obtain security team sign-off for non-production use
 - Publish stable release artifacts to GitHub Releases with signed binaries, checksums, and reproducible builds
 
 ### Decisions log
