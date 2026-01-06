@@ -36,10 +36,10 @@
          - Cross-platform release binaries built and published to GitHub Releases with checksums and GPG signatures on tags
          - Release process documented in CONTRIBUTING.md
          - Stable release v1.0.0 tagged and published to GitHub Releases with cross-platform binaries, checksums, and GPG signatures
+- Testing procedure documented for EKS, GKE, and AKS clusters
 
 ### Next steps
 
-- Test deployment and functionality on EKS, GKE, and AKS clusters
 - Update documentation with release notes and final deployment verification
 
 ### Decisions log
