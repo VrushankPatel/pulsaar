@@ -54,7 +54,4 @@
 
 ### Next steps
 
-
-
-
-
+- Publish stable release artifacts to GitHub Releases with signed binaries, checksums, Debian packages, RPM, and Homebrew formulas
