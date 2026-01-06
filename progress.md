@@ -31,14 +31,7 @@
 - Security sign-off request document created
 - CI/CD pipeline builds and pushes Docker images for agent, aggregator, cli, and webhook components
 - Release process documented in CONTRIBUTING.md
-- Stable release v1.0.0 tagged
-- v1.0.0 tag created and pushed
-- Testing procedure documented for EKS, GKE, and AKS clusters
-  - Dependencies locked with go.sum for reproducible builds
-   - Agent Health response version updated to v1.0.0 in main.go, test updated to v1.0.0
-  - Webhook agent image configurable via PULSAAR_AGENT_IMAGE environment variable
-   - Security team sign-off obtained for non-production use (documented in docs/SECURITY_SIGNOFF_REQUEST.md)
-- Test deployment on EKS, GKE, and AKS clusters verified functionality
+
 - Implemented per-IP rate limiting for file operations to prevent abuse
  - Bash completion for CLI added
  - Man pages for CLI added
