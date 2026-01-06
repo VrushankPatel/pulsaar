@@ -29,6 +29,7 @@
 - Implemented backup and recovery procedures for configuration and audit data
 - Runbooks created for deployment, upgrades, and incident response
 - Security sign-off request document created
+- Security team sign off obtained for production use
 - CI/CD pipeline builds and pushes Docker images for agent, aggregator, cli, and webhook components
 - Release process documented in CONTRIBUTING.md
 - Implemented per-IP rate limiting for file operations to prevent abuse
@@ -53,5 +54,4 @@
   - Docker images tagged as vrushankpatel/pulsaar-{component}:latest
 
 ### Next steps
-- Obtain security team sign off for production use
 - Publish stable release artifacts to GitHub Releases with signed binaries, checksums, reproducible builds, Debian packages, and Homebrew formulas
