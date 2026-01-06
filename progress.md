@@ -41,6 +41,10 @@
 - Helm chart bugs fixed for proper deployment on Kubernetes clusters
 - Local deployment testing completed with kind cluster
 - Deploy script created for EKS, GKE, and AKS clusters with functionality verification
+- Stable release v1.0.0 published to GitHub Releases with signed binaries, checksums, reproducible builds, Debian packages, and Homebrew formulas
+
+### Next steps
+- [Project complete - stable release v1.0.0 published]
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
@@ -52,5 +56,3 @@
   - Client certs via PULSAAR_CLIENT_CERT_FILE, PULSAAR_CLIENT_KEY_FILE, PULSAAR_CA_FILE for CLI
   - Docker images tagged as vrushankpatel/pulsaar-{component}:latest
 
-### Next steps
-- Publish stable release v1.0.0 to GitHub Releases with signed binaries, checksums, reproducible builds, Debian packages, and Homebrew formulas
