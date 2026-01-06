@@ -43,7 +43,9 @@ func handleAudit(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("Failed to send to external log: %v", err)
 		} else {
-			resp.Body.Close()
+			if err := resp.Body.Close(); err != nil {
+				log.Printf("Error closing response body: %v", err)
+			}
 		}
 	}
 
