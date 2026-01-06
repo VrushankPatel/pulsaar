@@ -35,7 +35,7 @@
         - CI/CD pipeline builds and pushes Docker images for agent, aggregator, cli, and webhook components
 
 ### Next steps
-- Project complete
+- Project completed so far but do check whats pending based on vision and all and update accordingly
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
