@@ -40,20 +40,10 @@ spec:
             - name: grpc
               containerPort: 50051
               protocol: TCP
-          env:
-            - name: PULSAAR_AGENT_PORT
-              value: "50051"
-          livenessProbe:
-            grpc:
-              port: 50051
-            initialDelaySeconds: 15
-            periodSeconds: 20
-          readinessProbe:
-            grpc:
-              port: 50051
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          resources:
+           env:
+             - name: PULSAAR_AGENT_PORT
+               value: "50051"
+           resources:
             {{- toYaml .Values.agent.resources | nindent 12 }}
       {{- with .Values.agent.nodeSelector }}
       nodeSelector:
