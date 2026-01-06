@@ -17,7 +17,7 @@
 - CLI supports apiserver proxy connection path for connecting to agent without kubectl port-forward
 - RBAC enforced at control plane using TokenReview and SubjectAccessReview
 - Mutating webhook for sidecar injection implemented
-- Test deployment on EKS, GKE, and AKS implemented with scripts/test_deployment.sh and manifests/test-deployment.yaml
+
 - Production deployment planning completed
 - Helm charts created for easy Kubernetes deployment with configurable TLS, RBAC, and monitoring options
 - Production monitoring with Prometheus metrics exported from agent and webhook
