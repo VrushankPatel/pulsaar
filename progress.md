@@ -50,7 +50,7 @@
   - Client certs via PULSAAR_CLIENT_CERT_FILE, PULSAAR_CLIENT_KEY_FILE, PULSAAR_CA_FILE for CLI
   - Docker images tagged as vrushankpatel/pulsaar-{component}:latest
 
-- Added gosec for code security scanning, govulncheck for Go dependency vulnerability checks, and Trivy for container image vulnerability scanning in CI/CD
+- Added gosec for code security scanning and govulncheck for Go dependency vulnerability checks in CI/CD
 
 ### Production Deployment Plan
 - Build and push production Docker images for agent, CLI, and webhook components to a container registry
