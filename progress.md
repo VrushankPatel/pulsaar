@@ -41,6 +41,7 @@
 - Stable release artifacts published to GitHub Releases with signed binaries, checksums, and reproducible builds
 
 ### Next steps
+add coverage report exporting in CI
 
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
