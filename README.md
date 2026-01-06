@@ -274,17 +274,20 @@ mkdir -p pulsaar && cp cli pulsaar/cli
 # Test on local cluster
 ./scripts/test_deployment.sh local
 
-# Test on EKS
+# Deploy full Pulsaar system on cloud clusters
+# Set kubeconfig environment variables as needed
 export KUBECONFIG_EKS=/path/to/eks/kubeconfig
-./scripts/test_deployment.sh eks
-
-# Test on GKE
 export KUBECONFIG_GKE=/path/to/gke/kubeconfig
-./scripts/test_deployment.sh gke
-
-# Test on AKS
 export KUBECONFIG_AKS=/path/to/aks/kubeconfig
-./scripts/test_deployment.sh aks
+
+# Deploy and verify on EKS
+./scripts/deploy_cloud.sh eks
+
+# Deploy and verify on GKE
+./scripts/deploy_cloud.sh gke
+
+# Deploy and verify on AKS
+./scripts/deploy_cloud.sh aks
 ```
 
 ### Validation
