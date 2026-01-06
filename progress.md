@@ -38,6 +38,8 @@
 
 ### Next steps
 
+- Remove committed binaries (agent, pulsaar/cli, pulsaar/webhook) from repo to keep tree clean
+
 ### Decisions log
   - Default MVP connection: kubectl port-forward or apiserver proxy
   - mTLS production requirement via cert-manager
