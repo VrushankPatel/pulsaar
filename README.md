@@ -1,5 +1,9 @@
 # Pulsaar
 
+![Pulsaar Banner](docs/img/banner.png)
+
+[![codecov](https://codecov.io/gh/VrushankPatel/pulsaar/graph/badge.svg?token=GDvWVNIFUD)](https://codecov.io/gh/VrushankPatel/pulsaar)
+
 Pulsaar is a production-safe, auditable, read-only file exploration tool for Kubernetes pods without using kubectl exec or granting shell access.
 
 ## Problem
