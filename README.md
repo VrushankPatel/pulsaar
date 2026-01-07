@@ -1,6 +1,6 @@
 # Pulsaar
 
-![Pulsaar Banner](docs/img/banner.png)
+![Pulsaar Logo](docs/img/pulsaar_logo.svg)
 
 [![codecov](https://codecov.io/gh/VrushankPatel/pulsaar/graph/badge.svg?token=GDvWVNIFUD)](https://codecov.io/gh/VrushankPatel/pulsaar)
 
