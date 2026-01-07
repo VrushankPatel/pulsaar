@@ -19,8 +19,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
-         with:
-           go-version: '1.24'
+        with:
+          go-version: '1.25'
       - name: Tidy modules
         run: go mod tidy
       - name: Run tests
@@ -46,8 +46,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
-         with:
-           go-version: '1.24'
+        with:
+          go-version: '1.25'
       - name: Build binaries
         run: |
           mkdir -p bin
@@ -66,8 +66,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
-         with:
-           go-version: '1.24'
+        with:
+          go-version: '1.25'
       - name: Download binaries
         uses: actions/download-artifact@v4
         with:
@@ -150,8 +150,8 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/setup-go@v6
-         with:
-           go-version: '1.24'
+        with:
+          go-version: '1.25'
       - name: Import GPG key
         run: echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --import --batch
       - name: Set GPG fingerprint
