@@ -1,352 +1,76 @@
 # Pulsaar
 
-![Pulsaar Logo](docs/img/pulsaar_logo.svg)
-
+[![CI/CD](https://github.com/VrushankPatel/pulsaar/actions/workflows/ci.yml/badge.svg)](https://github.com/VrushankPatel/pulsaar/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/VrushankPatel/pulsaar/graph/badge.svg?token=GDvWVNIFUD)](https://codecov.io/gh/VrushankPatel/pulsaar)
+[![Go Report Card](https://goreportcard.com/badge/github.com/VrushankPatel/pulsaar)](https://goreportcard.com/report/github.com/VrushankPatel/pulsaar)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Pulsaar is a production-safe, auditable, read-only file exploration tool for Kubernetes pods without using kubectl exec or granting shell access.
+Production-safe, auditable, read-only file exploration for Kubernetes pods.
 
-## Problem
+## Overview
 
-Platform and security teams forbid kubectl exec and shell logins in production. Developers still need safe, auditable, read-only access to container filesystems for troubleshooting and compliance.
+Pulsaar solves the security challenge of inspecting container filesystems in production. It provides developers with safe, read-only access to troubleshoot issues without requiring `kubectl exec`, shell access, or elevated permissions.
 
-## Solution
-
-Pulsaar provides a gRPC-based agent that runs inside pods, serving read-only file operations (ListDirectory, Stat, ReadFile, StreamFile) with path allowlists, size limits, and comprehensive audit logging.
-
-## Features
-
-- **Read-only operations**: List directories, read files, stat files, stream files
-- **Security**: Path allowlists/denylists, mTLS encryption, RBAC integration, rate limiting
-- **Audit logging**: All operations logged to stdout with optional HTTP aggregator
-- **Deployment modes**:
-  - Embedded agent in container images
-  - Sidecar injection via mutating webhook
-  - Ephemeral container injection for on-demand access
-
-## Documentation
-
-- [Release Notes](docs/RELEASE_NOTES.md)
-- [API Reference](docs/API_REFERENCE.md)
-- [Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
+### Key Features
+- **Read-Only**: Strict enforcement of read-only operations (List, Read, Stat).
+- **Secure**: mTLS encryption, RBAC integration, and granular path allowlists.
+- **Auditable**: Comprehensive logging of all file access attempts.
+- **Flexible**: Deploy via sidecar injection, ephemeral containers, or embedded agents.
 
 ## Installation
 
-### From Packages
+### CLI Tool
+Download the latest release from the [Releases Page](https://github.com/VrushankPatel/pulsaar/releases).
 
-#### Homebrew (macOS/Linux)
-
+**Homebrew (macOS/Linux)**
 ```bash
 brew tap VrushankPatel/homebrew-pulsaar
 brew install pulsaar-cli
 ```
 
-#### Debian/Ubuntu
-
-Download the .deb package from [GitHub Releases](https://github.com/VrushankPatel/pulsaar/releases) and install:
-
-```bash
-sudo dpkg -i pulsaar-cli_*.deb
-```
-
-### From Source
-
-## Quick Start
-
-### 1. Build the binaries
+### Cluster Components
+Install the Pulsaar agent and webhook using Helm.
 
 ```bash
-go build -o agent ./cmd/agent
-go build -o cli ./cmd/cli
+helm repo add pulsaar https://vrushankpatel.github.io/pulsaar
+helm install pulsaar pulsaar/pulsaar --namespace pulsaar-system --create-namespace
 ```
 
-### 2. Deploy the agent
+## Usage
 
-#### Option A: Embedded in your application image
-
-Add the agent binary to your container image and run it alongside your app:
-
-```dockerfile
-COPY agent /usr/local/bin/pulsaar-agent
-RUN chmod +x /usr/local/bin/pulsaar-agent
-
-# Run agent with your app
-CMD ["/usr/local/bin/pulsaar-agent"]
-```
-
-Set environment variables for TLS certificates:
-
+### Explore File System
+List files in a specific pod directory.
 ```bash
-export PULSAAR_TLS_CERT_FILE=/path/to/server.crt
-export PULSAAR_TLS_KEY_FILE=/path/to/server.key
-export PULSAAR_TLS_CA_FILE=/path/to/ca.crt  # For client cert verification
+pulsaar explore --pod my-pod -n default --path /var/log
 ```
 
-#### Option B: Sidecar injection
-
-Apply the mutating webhook:
-
+### Read File Content
+Securely read configuration or log files.
 ```bash
-kubectl apply -f manifests/webhook.yaml
+pulsaar read --pod my-pod -n default --path /app/config.json
 ```
 
-Set the agent image for injection (optional, defaults to `pulsaar/agent:latest`):
-
+### Check File Stats
+Get file metadata (size, permissions, mod time).
 ```bash
-export PULSAAR_AGENT_IMAGE=your-registry/pulsaar-agent:v1.0
+pulsaar stat --pod my-pod -n default --path /tmp/app.lock
 ```
 
-Annotate your pods for injection:
+## Configuration
+
+Control access using Kubernetes annotations on your pods.
 
 ```yaml
-apiVersion: v1
-kind: Pod
 metadata:
   annotations:
-    pulsaar.io/inject-agent: "true"
-spec:
-  containers:
-  - name: app
-    image: your-app
+    pulsaar.io/inject: "true"
+    pulsaar.io/allowed-roots: "/var/log,/app/config"
 ```
-
-#### Option C: Ephemeral container (for locked clusters)
-
-The CLI can inject ephemeral containers on-demand.
-
-### 3. Use the CLI
-
-Explore files in a pod:
-
-```bash
-./cli explore --pod my-pod --namespace default --path /
-```
-
-Read a file:
-
-```bash
-./cli read --pod my-pod --namespace default --path /app/config.yaml
-```
-
-Note: When reading binary files, the CLI will display a warning as output may be corrupted.
-
-Stream a large file:
-
-```bash
-./cli stream --pod my-pod --namespace default --path /var/log/app.log
-```
-
-Note: When streaming binary files, the CLI will display a warning as output may be corrupted.
-
- Get file info:
-
-```bash
-./cli stat --pod my-pod --namespace default --path /app/data.txt
-```
-
-Check agent health:
-
-```bash
-./cli health --pod my-pod --namespace default
-```
-
-Generate shell completion:
-
-```bash
-# Bash
-./cli completion bash > /etc/bash_completion.d/pulsaar
-
-# Zsh
-./cli completion zsh > "${fpath[1]}/_pulsaar"
-
-# Fish
-./cli completion fish > ~/.config/fish/completions/pulsaar.fish
-
- # PowerShell
- ./cli completion powershell > pulsaar.ps1
- ```
-
-Generate man pages:
-
-```bash
-./cli man
-```
-
-This generates man pages in the `man/` directory.
-
-## Connection Methods
-
-### Port Forward (default)
-
-Uses `kubectl port-forward` to connect to the agent:
-
-```bash
-./cli explore --pod my-pod --connection-method port-forward
-```
-
-### API Server Proxy
-
-Connects via Kubernetes API server proxy (useful when port-forward is blocked):
-
-```bash
-./cli explore --pod my-pod --connection-method apiserver-proxy
-```
-
-## TLS Configuration
-
-### For MVP (self-signed)
-
-No environment variables needed - agent generates self-signed certificates.
-
-### For Production (mTLS)
-
-Set these environment variables for the agent:
-
-- `PULSAAR_TLS_CERT_FILE`: Path to server certificate
-- `PULSAAR_TLS_KEY_FILE`: Path to server private key
-- `PULSAAR_TLS_CA_FILE`: Path to CA certificate for client verification
-
-For the CLI:
-
-- `PULSAAR_CLIENT_CERT_FILE`: Path to client certificate
-- `PULSAAR_CLIENT_KEY_FILE`: Path to client private key
-- `PULSAAR_CA_FILE`: Path to CA certificate
-
-Example:
-
-```bash
-# Agent
-export PULSAAR_TLS_CERT_FILE=/etc/ssl/certs/pulsaar.crt
-export PULSAAR_TLS_KEY_FILE=/etc/ssl/private/pulsaar.key
-export PULSAAR_TLS_CA_FILE=/etc/ssl/certs/ca.crt
-
-# CLI
-export PULSAAR_CLIENT_CERT_FILE=/etc/ssl/certs/client.crt
-export PULSAAR_CLIENT_KEY_FILE=/etc/ssl/private/client.key
-export PULSAAR_CA_FILE=/etc/ssl/certs/ca.crt
-```
-
-## Path Allowlist Configuration
-
-The agent enforces path allowlists to restrict file access. Configuration is checked in this order:
-
-1. **Pod annotations** (highest priority): Set `pulsaar.io/allowed-roots` annotation on the pod with comma-separated paths
-2. **Namespace ConfigMap**: Create a ConfigMap named `pulsaar-config` in the namespace with `allowed-roots` key
-3. **Environment variable**: Set `PULSAAR_ALLOWED_ROOTS` with comma-separated paths
-4. **Default**: `/` (allows all paths)
-
-Example pod annotation:
-
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  annotations:
-    pulsaar.io/allowed-roots: "/app,/tmp"
-spec:
-  containers:
-  - name: app
-    image: your-app
-```
-
-## Audit Logging
-
-All file operations are logged to stdout in JSON format:
-
-```json
-{"timestamp":"2023-01-01T12:00:00Z","operation":"ReadFile","path":"/app/config.yaml"}
-```
-
-To send logs to an aggregator:
-
-```bash
-export PULSAAR_AUDIT_AGGREGATOR_URL=https://your-log-aggregator.com/logs
-```
-
-## Security Considerations
-
-- Read-only operations only
-- Path allowlists enforced
-- File size limits (1MB default)
-- Per-IP rate limiting to prevent abuse
-- mTLS encryption required in production
-- RBAC integration
-- Audit logging for compliance
-
-## Development
-
-### Prerequisites
-
-- Go 1.19+
-- protoc (for generating protobuf stubs)
-- kubectl (for testing)
-
-### Building
-
-```bash
-# Generate protobuf
-protoc --go_out=. --go-grpc_out=. api/pulsaar.proto
-
-# Build all
-go build ./cmd/...
-```
-
-### Testing
-
-```bash
-go test ./...
-```
-
-### Deployment Testing
-
-Test Pulsaar deployment on Kubernetes clusters:
-
-```bash
-# Build binaries
-go build -o agent ./cmd/agent
-go build -o cli ./cmd/cli
-mkdir -p pulsaar && cp cli pulsaar/cli
-
-# Test on local cluster
-./scripts/test_deployment.sh local
-
-# Deploy full Pulsaar system on cloud clusters
-# Set kubeconfig environment variables as needed
-export KUBECONFIG_EKS=/path/to/eks/kubeconfig
-export KUBECONFIG_GKE=/path/to/gke/kubeconfig
-export KUBECONFIG_AKS=/path/to/aks/kubeconfig
-
-# Deploy and verify on EKS
-./scripts/deploy_cloud.sh eks
-
-# Deploy and verify on GKE
-./scripts/deploy_cloud.sh gke
-
-# Deploy and verify on AKS
-./scripts/deploy_cloud.sh aks
-```
-
-### Validation
-
-```bash
-bash scripts/validate_repo.sh
-```
-
-## Architecture
-
-- **Agent**: gRPC server running in pods, serves file operations
-- **CLI**: Client that connects to agent via port-forward or API proxy
-- **Webhook**: Mutating admission webhook for sidecar injection
-- **API**: Protocol buffer definitions for gRPC service
 
 ## Contributing
 
-1. Follow the vision in `vision.md`
-2. Obey rules in `rules.md`
-3. Check progress in `progress.md`
-4. Run validation before committing
+We welcome contributions! Please read our [Contribution Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before submitting a Pull Request.
 
 ## License
 
-Licensed under Apache License 2.0
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
