@@ -110,6 +110,21 @@ jobs:
           helm install pulsaar-test ./charts/pulsaar --set agent.image.tag=latest --set aggregator.image.tag=latest --set webhook.image.tag=latest
       - name: Wait for deployments
         run: kubectl wait --for=condition=available --timeout=300s deployment/pulsaar-test-agent deployment/pulsaar-test-aggregator deployment/pulsaar-test
+      - name: Debug Deployment Failure
+        if: failure()
+        run: |
+          echo "=== POD STATUS ==="
+          kubectl get pods -n default -o wide
+          echo "=== POD DESCRIPTIONS ==="
+          kubectl describe pods -n default
+          echo "=== EVENTS ==="
+          kubectl get events -n default --sort-by='.lastTimestamp'
+          echo "=== LOGS: AGENT ==="
+          kubectl logs -l app.kubernetes.io/instance=pulsaar-test -c agent -n default --tail=100 || true
+          echo "=== LOGS: AGGREGATOR ==="
+          kubectl logs -l app.kubernetes.io/instance=pulsaar-test -c aggregator -n default --tail=100 || true
+          echo "=== LOGS: WEBHOOK ==="
+          kubectl logs -l app.kubernetes.io/instance=pulsaar-test -c webhook -n default --tail=100 || true
       - name: Run deployment test
         run: ./scripts/test_deployment.sh local
 
