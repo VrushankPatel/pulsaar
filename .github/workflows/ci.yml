@@ -16,17 +16,19 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
-         with:
-           go-version: '1.24'
+        with:
+          go-version: '1.25'
       - name: Tidy modules
         run: go mod tidy
       - name: Run tests
         run: go test -coverprofile=coverage.out ./...
       - uses: codecov/codecov-action@v3
-        if: ${{ secrets.CODECOV_TOKEN != '' }}
+        if: env.CODECOV_TOKEN != ''
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.out
@@ -46,8 +48,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
-         with:
-           go-version: '1.24'
+        with:
+          go-version: '1.25'
       - name: Build binaries
         run: |
           mkdir -p bin
@@ -66,8 +68,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
-         with:
-           go-version: '1.24'
+        with:
+          go-version: '1.25'
       - name: Download binaries
         uses: actions/download-artifact@v4
         with:
@@ -76,17 +78,17 @@ jobs:
       - run: chmod +x bin/*
       - name: Install kubectl
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/1.23.txt)/bin/linux/amd64/kubectl"
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
       - name: Install kind
         run: |
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64
           chmod +x ./kind
           sudo mv ./kind /usr/local/bin/
       - name: Install Helm
         run: |
-          curl https://get.helm.sh/helm-v3.12.0-linux-amd64.tar.gz -o helm.tar.gz
+          curl https://get.helm.sh/helm-v3.16.1-linux-amd64.tar.gz -o helm.tar.gz
           tar -zxvf helm.tar.gz
           sudo mv linux-amd64/helm /usr/local/bin/helm
       - name: Create kind cluster
@@ -108,6 +110,21 @@ jobs:
           helm install pulsaar-test ./charts/pulsaar --set agent.image.tag=latest --set aggregator.image.tag=latest --set webhook.image.tag=latest
       - name: Wait for deployments
         run: kubectl wait --for=condition=available --timeout=300s deployment/pulsaar-test-agent deployment/pulsaar-test-aggregator deployment/pulsaar-test
+      - name: Debug Deployment Failure
+        if: failure()
+        run: |
+          echo "=== POD STATUS ==="
+          kubectl get pods -n default -o wide
+          echo "=== POD DESCRIPTIONS ==="
+          kubectl describe pods -n default
+          echo "=== EVENTS ==="
+          kubectl get events -n default --sort-by='.lastTimestamp'
+          echo "=== LOGS: AGENT ==="
+          kubectl logs -l app.kubernetes.io/instance=pulsaar-test -c agent -n default --tail=100 || true
+          echo "=== LOGS: AGGREGATOR ==="
+          kubectl logs -l app.kubernetes.io/instance=pulsaar-test -c aggregator -n default --tail=100 || true
+          echo "=== LOGS: WEBHOOK ==="
+          kubectl logs -l app.kubernetes.io/instance=pulsaar-test -c webhook -n default --tail=100 || true
       - name: Run deployment test
         run: ./scripts/test_deployment.sh local
 
@@ -150,8 +167,8 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/setup-go@v6
-         with:
-           go-version: '1.24'
+        with:
+          go-version: '1.25'
       - name: Import GPG key
         run: echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --import --batch
       - name: Set GPG fingerprint
