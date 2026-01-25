@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/VrushankPatel/pulsaar/internal/config"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
@@ -14,28 +15,6 @@ import (
 
 	api "github.com/VrushankPatel/pulsaar/api"
 )
-
-func TestIsPathAllowed(t *testing.T) {
-	tests := []struct {
-		path         string
-		allowedRoots []string
-		expected     bool
-	}{
-		{"/app/file.txt", []string{"/app"}, true},
-		{"/tmp/file.txt", []string{"/app"}, false},
-		{"/app/../etc/passwd", []string{"/app"}, false},
-		{"/app/sub/file.txt", []string{"/app"}, true},
-		{"/app", []string{"/app"}, true},
-		{"/appfile", []string{"/app"}, false},
-	}
-
-	for _, tt := range tests {
-		result := isPathAllowed(tt.path, tt.allowedRoots)
-		if result != tt.expected {
-			t.Errorf("isPathAllowed(%s, %v) = %v; want %v", tt.path, tt.allowedRoots, result, tt.expected)
-		}
-	}
-}
 
 func TestAuditLog(t *testing.T) {
 	// Test audit log without aggregator
@@ -53,8 +32,8 @@ func TestAuditLog(t *testing.T) {
 }
 
 func TestLoadOrGenerateCert(t *testing.T) {
-	// Test self-signed generation (no env)
-	cert, err := loadOrGenerateCert()
+	// Test self-signed generation (no args)
+	cert, err := loadOrGenerateCert("", "")
 	if err != nil {
 		t.Fatalf("failed to generate cert: %v", err)
 	}
@@ -65,7 +44,7 @@ func TestLoadOrGenerateCert(t *testing.T) {
 
 func TestLoadCACertPool(t *testing.T) {
 	// Test no CA file
-	pool, err := loadCACertPool()
+	pool, err := loadCACertPool("")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -100,7 +79,9 @@ func TestRateLimiting(t *testing.T) {
 	limiters.Store(ip, rate.NewLimiter(rate.Limit(1), 1)) // 1 per second
 	defer limiters.Delete(ip)
 
-	s := &server{}
+	// With default config (allowed roots = /)
+	cfg := &config.AgentConfig{AllowedRoots: []string{"/"}}
+	s := &server{config: cfg}
 
 	// First call should succeed
 	_, err := s.ListDirectory(ctx, &api.ListRequest{
@@ -121,43 +102,5 @@ func TestRateLimiting(t *testing.T) {
 	}
 	if status.Code(err) != codes.ResourceExhausted {
 		t.Errorf("Expected ResourceExhausted, got %v", status.Code(err))
-	}
-}
-
-func TestGetNamespace(t *testing.T) {
-	// Test with env var
-	original := os.Getenv("PULSAAR_NAMESPACE")
-	defer func() { _ = os.Setenv("PULSAAR_NAMESPACE", original) }() //nolint:errcheck
-
-	_ = os.Setenv("PULSAAR_NAMESPACE", "test-ns") //nolint:errcheck
-	ns := getNamespace()
-	if ns != "test-ns" {
-		t.Errorf("expected test-ns, got %s", ns)
-	}
-
-	// Clear env, test file
-	_ = os.Setenv("PULSAAR_NAMESPACE", "") //nolint:errcheck
-	// Since we can't easily mock the file path, test that it returns "" when file not found
-	ns = getNamespace()
-	if ns != "" {
-		t.Errorf("expected empty, got %s", ns)
-	}
-}
-
-func TestLoadAllowedRootsFromConfigMap(t *testing.T) {
-	// Since this requires a k8s cluster, skip if not available
-	// In CI, it might not be, so just test that it returns nil when no cluster
-	roots := loadAllowedRootsFromConfigMap("default")
-	if roots != nil {
-		t.Errorf("expected nil when no cluster, got %v", roots)
-	}
-}
-
-func TestLoadAllowedRootsFromPodAnnotations(t *testing.T) {
-	// Since this requires a k8s cluster, skip if not available
-	// In CI, it might not be, so just test that it returns nil when no cluster
-	roots := loadAllowedRootsFromPodAnnotations("default", "test-pod")
-	if roots != nil {
-		t.Errorf("expected nil when no cluster, got %v", roots)
 	}
 }

@@ -17,7 +17,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -31,11 +30,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
 	api "github.com/VrushankPatel/pulsaar/api"
+	"github.com/VrushankPatel/pulsaar/internal/config"
 )
 
 var (
@@ -46,13 +43,10 @@ var (
 
 type server struct {
 	api.UnimplementedPulsaarAgentServer
+	config *config.AgentConfig
 }
 
-const maxReadSize int64 = 1024 * 1024 // 1MB
-
 var limiters sync.Map // map[string]*rate.Limiter
-var configuredAllowedRoots []string
-var configuredDeniedPaths []string
 
 func getLimiterForIP(ctx context.Context) *rate.Limiter {
 	p, ok := peer.FromContext(ctx)
@@ -73,10 +67,7 @@ func getLimiterForIP(ctx context.Context) *rate.Limiter {
 	return limiter.(*rate.Limiter)
 }
 
-func loadOrGenerateCert() (tls.Certificate, error) {
-	certFile := os.Getenv("PULSAAR_TLS_CERT_FILE")
-	keyFile := os.Getenv("PULSAAR_TLS_KEY_FILE")
-
+func loadOrGenerateCert(certFile, keyFile string) (tls.Certificate, error) {
 	if certFile != "" && keyFile != "" {
 		return tls.LoadX509KeyPair(certFile, keyFile)
 	}
@@ -111,8 +102,7 @@ func loadOrGenerateCert() (tls.Certificate, error) {
 	}, nil
 }
 
-func loadCACertPool() (*x509.CertPool, error) {
-	caFile := os.Getenv("PULSAAR_TLS_CA_FILE")
+func loadCACertPool(caFile string) (*x509.CertPool, error) {
 	if caFile == "" {
 		return nil, nil // No client cert verification
 	}
@@ -128,132 +118,6 @@ func loadCACertPool() (*x509.CertPool, error) {
 	}
 
 	return caCertPool, nil
-}
-
-func initConfiguredDeniedPaths() {
-	denylist := os.Getenv("PULSAAR_DENIED_PATHS")
-	if denylist == "" {
-		configuredDeniedPaths = []string{}
-	} else {
-		configuredDeniedPaths = strings.Split(denylist, ",")
-		for i, d := range configuredDeniedPaths {
-			configuredDeniedPaths[i] = strings.TrimSpace(d)
-		}
-	}
-}
-
-	func initConfiguredAllowedRoots() {
-	namespace := getNamespace()
-	podName := os.Getenv("PULSAAR_POD_NAME")
-	if namespace != "" && podName != "" {
-		roots := loadAllowedRootsFromPodAnnotations(namespace, podName)
-		if roots != nil {
-			configuredAllowedRoots = roots
-			return
-		}
-	}
-	if namespace != "" {
-		roots := loadAllowedRootsFromConfigMap(namespace)
-		if roots != nil {
-			configuredAllowedRoots = roots
-			return
-		}
-	}
-	// Fallback to env
-	roots := os.Getenv("PULSAAR_ALLOWED_ROOTS")
-	if roots == "" {
-		configuredAllowedRoots = []string{"/"}
-	} else {
-		configuredAllowedRoots = strings.Split(roots, ",")
-		for i, root := range configuredAllowedRoots {
-			configuredAllowedRoots[i] = strings.TrimSpace(root)
-		}
-	}
-}
-
-
-func getNamespace() string {
-	if ns := os.Getenv("PULSAAR_NAMESPACE"); ns != "" {
-		return ns
-	}
-	data, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(data))
-}
-
-func loadAllowedRootsFromConfigMap(namespace string) []string {
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		return nil
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil
-	}
-	cm, err := clientset.CoreV1().ConfigMaps(namespace).Get(context.TODO(), "pulsaar-config", metav1.GetOptions{})
-	if err != nil {
-		return nil
-	}
-	rootsStr, ok := cm.Data["allowed-roots"]
-	if !ok {
-		return nil
-	}
-	if rootsStr == "" {
-		return []string{}
-	}
-	roots := strings.Split(rootsStr, ",")
-	for i, root := range roots {
-		roots[i] = strings.TrimSpace(root)
-	}
-	return roots
-}
-
-func loadAllowedRootsFromPodAnnotations(namespace, podName string) []string {
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		return nil
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil
-	}
-	pod, err := clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
-	if err != nil {
-		return nil
-	}
-	rootsStr, ok := pod.Annotations["pulsaar.io/allowed-roots"]
-	if !ok {
-		return nil
-	}
-	if rootsStr == "" {
-		return []string{}
-	}
-	roots := strings.Split(rootsStr, ",")
-	for i, root := range roots {
-		roots[i] = strings.TrimSpace(root)
-	}
-	return roots
-}
-
-func isPathAllowed(path string, allowedRoots []string) bool {
-	cleanPath := filepath.Clean(path)
-	// First, check denylist
-	for _, deny := range configuredDeniedPaths {
-		cleanDeny := filepath.Clean(deny)
-		if cleanDeny == "/" || cleanPath == cleanDeny || strings.HasPrefix(cleanPath, cleanDeny+"/") {
-			return false
-		}
-	}
-	// Then, check allowlist
-	for _, root := range allowedRoots {
-		cleanRoot := filepath.Clean(root)
-		if cleanRoot == "/" || cleanPath == cleanRoot || strings.HasPrefix(cleanPath, cleanRoot+"/") {
-			return true
-		}
-	}
-	return false
 }
 
 func auditLog(operation, path string) {
@@ -282,12 +146,9 @@ func (s *server) ListDirectory(ctx context.Context, req *api.ListRequest) (*api.
 		return nil, status.Errorf(codes.ResourceExhausted, "Rate limit exceeded. Please wait before retrying.")
 	}
 	auditLog("ListDirectory", req.Path)
-	allowedRoots := req.AllowedRoots
-	if len(allowedRoots) == 0 {
-		allowedRoots = configuredAllowedRoots
-	}
-	if !isPathAllowed(req.Path, allowedRoots) {
-		return nil, status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed. Allowed roots: %v", req.Path, allowedRoots)
+
+	if !s.config.IsPathAllowed(req.Path, req.AllowedRoots) {
+		return nil, status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed.", req.Path)
 	}
 
 	entries, err := os.ReadDir(req.Path)
@@ -318,12 +179,9 @@ func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatRespo
 		return nil, status.Errorf(codes.ResourceExhausted, "Rate limit exceeded. Please wait before retrying.")
 	}
 	auditLog("Stat", req.Path)
-	allowedRoots := req.AllowedRoots
-	if len(allowedRoots) == 0 {
-		allowedRoots = configuredAllowedRoots
-	}
-	if !isPathAllowed(req.Path, allowedRoots) {
-		return nil, status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed. Allowed roots: %v", req.Path, allowedRoots)
+
+	if !s.config.IsPathAllowed(req.Path, req.AllowedRoots) {
+		return nil, status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed.", req.Path)
 	}
 
 	info, err := os.Stat(req.Path)
@@ -347,20 +205,17 @@ func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadR
 		return nil, status.Errorf(codes.ResourceExhausted, "Rate limit exceeded. Please wait before retrying.")
 	}
 	auditLog("ReadFile", req.Path)
-	allowedRoots := req.AllowedRoots
-	if len(allowedRoots) == 0 {
-		allowedRoots = configuredAllowedRoots
-	}
-	if !isPathAllowed(req.Path, allowedRoots) {
-		return nil, status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed. Allowed roots: %v", req.Path, allowedRoots)
+
+	if !s.config.IsPathAllowed(req.Path, req.AllowedRoots) {
+		return nil, status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed.", req.Path)
 	}
 
 	readLen := req.Length
 	if readLen == 0 {
-		readLen = maxReadSize
+		readLen = config.MaxReadSize
 	}
-	if readLen > maxReadSize {
-		return nil, status.Errorf(codes.InvalidArgument, "Requested read length (%d bytes) exceeds the maximum allowed size of %d bytes", readLen, maxReadSize)
+	if readLen > config.MaxReadSize {
+		return nil, status.Errorf(codes.InvalidArgument, "Requested read length (%d bytes) exceeds the maximum allowed size of %d bytes", readLen, config.MaxReadSize)
 	}
 
 	file, err := os.Open(req.Path)
@@ -384,20 +239,17 @@ func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_Stre
 		return status.Errorf(codes.ResourceExhausted, "Rate limit exceeded. Please wait before retrying.")
 	}
 	auditLog("StreamFile", req.Path)
-	allowedRoots := req.AllowedRoots
-	if len(allowedRoots) == 0 {
-		allowedRoots = configuredAllowedRoots
-	}
-	if !isPathAllowed(req.Path, allowedRoots) {
-		return status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed. Allowed roots: %v", req.Path, allowedRoots)
+
+	if !s.config.IsPathAllowed(req.Path, req.AllowedRoots) {
+		return status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed.", req.Path)
 	}
 
 	chunkSize := req.ChunkSize
 	if chunkSize == 0 {
 		chunkSize = 64 * 1024 // 64KB default
 	}
-	if chunkSize > maxReadSize {
-		return status.Errorf(codes.InvalidArgument, "Requested chunk size (%d bytes) exceeds the maximum allowed size of %d bytes", chunkSize, maxReadSize)
+	if chunkSize > config.MaxReadSize {
+		return status.Errorf(codes.InvalidArgument, "Requested chunk size (%d bytes) exceeds the maximum allowed size of %d bytes", chunkSize, config.MaxReadSize)
 	}
 
 	file, err := os.Open(req.Path)
@@ -437,15 +289,18 @@ func (s *server) Health(ctx context.Context, req *emptypb.Empty) (*api.HealthRes
 }
 
 func main() {
-	initConfiguredAllowedRoots()
-	initConfiguredDeniedPaths()
+	cfg, err := config.LoadAgentConfig()
+	if err != nil {
+		log.Printf("Warning: failed to load full agent config: %v", err)
+	}
+	// Fallback/Defaults are handled inside LoadAgentConfig, so cfg should be usable.
 
-	cert, err := loadOrGenerateCert()
+	cert, err := loadOrGenerateCert(cfg.TLSCertFile, cfg.TLSKeyFile)
 	if err != nil {
 		log.Fatalf("failed to load or generate cert: %v", err)
 	}
 
-	caCertPool, err := loadCACertPool()
+	caCertPool, err := loadCACertPool(cfg.TLSCaFile)
 	if err != nil {
 		log.Fatalf("failed to load CA cert pool: %v", err)
 	}
@@ -470,7 +325,7 @@ func main() {
 		grpc.UnaryInterceptor(grpcPrometheus.UnaryServerInterceptor),
 		grpc.StreamInterceptor(grpcPrometheus.StreamServerInterceptor),
 	)
-	api.RegisterPulsaarAgentServer(s, &server{})
+	api.RegisterPulsaarAgentServer(s, &server{config: cfg})
 	grpcPrometheus.Register(s)
 
 	go func() {

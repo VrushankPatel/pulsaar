@@ -26,6 +26,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	api "github.com/VrushankPatel/pulsaar/api"
+	"github.com/VrushankPatel/pulsaar/internal/config"
 )
 
 func loadOrGenerateCert() (tls.Certificate, error) {
@@ -632,11 +633,11 @@ func TestHealthEndToEnd(t *testing.T) {
 
 func TestCreateTLSConfig(t *testing.T) {
 	// Test default config
-	config, err := createTLSConfig()
+	tlsConfig, err := createTLSConfig(&config.CLIConfig{})
 	if err != nil {
 		t.Fatalf("failed to create config: %v", err)
 	}
-	if !config.InsecureSkipVerify {
+	if !tlsConfig.InsecureSkipVerify {
 		t.Error("expected InsecureSkipVerify true by default")
 	}
 }
@@ -818,7 +819,13 @@ func TestMTLSCertificateLoading(t *testing.T) {
 	_ = os.Setenv("PULSAAR_CLIENT_KEY_FILE", clientKeyFile)
 	_ = os.Setenv("PULSAAR_CA_FILE", caCertFile)
 
-	cliConfig, err := createTLSConfig()
+	cfg := &config.CLIConfig{
+		ClientCertFile: clientCertFile,
+		ClientKeyFile:  clientKeyFile,
+		CaFile:         caCertFile,
+	}
+
+	cliConfig, err := createTLSConfig(cfg)
 	if err != nil {
 		t.Fatalf("failed to create CLI TLS config: %v", err)
 	}
@@ -968,7 +975,11 @@ func TestMTLSEndToEnd(t *testing.T) {
 		_ = os.Setenv("PULSAAR_CA_FILE", originalCLI_CAFile)
 	}()
 
-	cliConfig, err := createTLSConfig()
+	cliCfg, err := config.LoadCLIConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cliConfig, err := createTLSConfig(cliCfg)
 	if err != nil {
 		t.Fatal(err)
 	}

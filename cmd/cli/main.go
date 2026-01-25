@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	api "github.com/VrushankPatel/pulsaar/api"
+	"github.com/VrushankPatel/pulsaar/internal/config"
 )
 
 var (
@@ -137,7 +138,7 @@ func checkUserAccess(namespace, pod string) error {
 	return nil
 }
 
-func injectEphemeralContainer(podName, namespace string) error {
+func injectEphemeralContainer(podName, namespace string, cfg *config.CLIConfig) error {
 	clientset, err := getClientset()
 	if err != nil {
 		return fmt.Errorf("failed to create k8s client: %v", err)
@@ -161,7 +162,8 @@ func injectEphemeralContainer(podName, namespace string) error {
 	}
 
 	// Add ephemeral container
-	image := os.Getenv("PULSAAR_AGENT_IMAGE")
+	image := cfg.AgentImage
+	// Fallback if empty (though config package handles default)
 	if image == "" {
 		image = "pulsaar/agent:latest"
 	}
@@ -209,17 +211,13 @@ func injectEphemeralContainer(podName, namespace string) error {
 	return nil
 }
 
-func createTLSConfig() (*tls.Config, error) {
+func createTLSConfig(cfg *config.CLIConfig) (*tls.Config, error) {
 	config := &tls.Config{
 		InsecureSkipVerify: true, // Default for MVP port-forward
 	}
 
-	clientCertFile := os.Getenv("PULSAAR_CLIENT_CERT_FILE")
-	clientKeyFile := os.Getenv("PULSAAR_CLIENT_KEY_FILE")
-	caFile := os.Getenv("PULSAAR_CA_FILE")
-
-	if clientCertFile != "" && clientKeyFile != "" {
-		cert, err := tls.LoadX509KeyPair(clientCertFile, clientKeyFile)
+	if cfg.ClientCertFile != "" && cfg.ClientKeyFile != "" {
+		cert, err := tls.LoadX509KeyPair(cfg.ClientCertFile, cfg.ClientKeyFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load client cert: %v", err)
 		}
@@ -227,8 +225,8 @@ func createTLSConfig() (*tls.Config, error) {
 		config.InsecureSkipVerify = false // Use proper verification if client cert provided
 	}
 
-	if caFile != "" {
-		caCert, err := os.ReadFile(caFile)
+	if cfg.CaFile != "" {
+		caCert, err := os.ReadFile(cfg.CaFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read CA file: %v", err)
 		}
@@ -245,13 +243,20 @@ func createTLSConfig() (*tls.Config, error) {
 
 func connectToAgent(cmd *cobra.Command, pod, namespace string) (*grpc.ClientConn, func(), error) {
 	connectionMethod, _ := cmd.Flags().GetString("connection-method")
-	tlsConfig, err := createTLSConfig()
+
+	// Load config
+	cfg, err := config.LoadCLIConfig()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create TLS configuration. Check your certificate files and environment variables (PULSAAR_CLIENT_CERT_FILE, PULSAAR_CLIENT_KEY_FILE, PULSAAR_CA_FILE). Error: %v", err)
+		return nil, nil, fmt.Errorf("failed to load CLI configuration: %v", err)
+	}
+
+	tlsConfig, err := createTLSConfig(cfg)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create TLS configuration. Check your certificate files and environment variables. Error: %v", err)
 	}
 
 	// Inject ephemeral container if needed
-	err = injectEphemeralContainer(pod, namespace)
+	err = injectEphemeralContainer(pod, namespace, cfg)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to inject Pulsaar agent into pod %s/%s. Ensure the pod supports ephemeral containers and you have permissions to update pods. Error: %v", namespace, pod, err)
 	}
