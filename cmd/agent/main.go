@@ -52,6 +52,7 @@ const maxReadSize int64 = 1024 * 1024 // 1MB
 
 var limiters sync.Map // map[string]*rate.Limiter
 var configuredAllowedRoots []string
+var configuredDeniedPaths []string
 
 func getLimiterForIP(ctx context.Context) *rate.Limiter {
 	p, ok := peer.FromContext(ctx)
@@ -129,7 +130,19 @@ func loadCACertPool() (*x509.CertPool, error) {
 	return caCertPool, nil
 }
 
-func initConfiguredAllowedRoots() {
+func initConfiguredDeniedPaths() {
+	denylist := os.Getenv("PULSAAR_DENIED_PATHS")
+	if denylist == "" {
+		configuredDeniedPaths = []string{}
+	} else {
+		configuredDeniedPaths = strings.Split(denylist, ",")
+		for i, d := range configuredDeniedPaths {
+			configuredDeniedPaths[i] = strings.TrimSpace(d)
+		}
+	}
+}
+
+	func initConfiguredAllowedRoots() {
 	namespace := getNamespace()
 	podName := os.Getenv("PULSAAR_POD_NAME")
 	if namespace != "" && podName != "" {
@@ -157,6 +170,7 @@ func initConfiguredAllowedRoots() {
 		}
 	}
 }
+
 
 func getNamespace() string {
 	if ns := os.Getenv("PULSAAR_NAMESPACE"); ns != "" {
@@ -225,6 +239,14 @@ func loadAllowedRootsFromPodAnnotations(namespace, podName string) []string {
 
 func isPathAllowed(path string, allowedRoots []string) bool {
 	cleanPath := filepath.Clean(path)
+	// First, check denylist
+	for _, deny := range configuredDeniedPaths {
+		cleanDeny := filepath.Clean(deny)
+		if cleanDeny == "/" || cleanPath == cleanDeny || strings.HasPrefix(cleanPath, cleanDeny+"/") {
+			return false
+		}
+	}
+	// Then, check allowlist
 	for _, root := range allowedRoots {
 		cleanRoot := filepath.Clean(root)
 		if cleanRoot == "/" || cleanPath == cleanRoot || strings.HasPrefix(cleanPath, cleanRoot+"/") {
@@ -416,6 +438,7 @@ func (s *server) Health(ctx context.Context, req *emptypb.Empty) (*api.HealthRes
 
 func main() {
 	initConfiguredAllowedRoots()
+	initConfiguredDeniedPaths()
 
 	cert, err := loadOrGenerateCert()
 	if err != nil {
