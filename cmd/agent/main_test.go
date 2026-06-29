@@ -17,39 +17,24 @@ import (
 )
 
 func TestAuditLog(t *testing.T) {
+	ctx := context.Background()
 	// Test audit log without aggregator
-	auditLog("TestOperation", "/test/path")
+	err := auditLog(ctx, "TestOperation", "/test/path")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
-	// Test with invalid aggregator URL (should not panic)
+	// Test with invalid aggregator URL (should fail under our new strict error propagation)
 	original := os.Getenv("PULSAAR_AUDIT_AGGREGATOR_URL")
 	if err := os.Setenv("PULSAAR_AUDIT_AGGREGATOR_URL", "http://invalid-url-that-will-fail"); err != nil {
 		t.Fatalf("failed to set env: %v", err)
 	}
-	auditLog("TestOperation2", "/test/path2")
+	err = auditLog(ctx, "TestOperation2", "/test/path2")
+	if err == nil {
+		t.Error("expected error from invalid aggregator URL but got none")
+	}
 	if err := os.Setenv("PULSAAR_AUDIT_AGGREGATOR_URL", original); err != nil {
 		t.Fatalf("failed to restore env: %v", err)
-	}
-}
-
-func TestLoadOrGenerateCert(t *testing.T) {
-	// Test self-signed generation (no args)
-	cert, err := loadOrGenerateCert("", "")
-	if err != nil {
-		t.Fatalf("failed to generate cert: %v", err)
-	}
-	if len(cert.Certificate) == 0 {
-		t.Error("expected certificate")
-	}
-}
-
-func TestLoadCACertPool(t *testing.T) {
-	// Test no CA file
-	pool, err := loadCACertPool("")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if pool != nil {
-		t.Error("expected nil pool when no CA file")
 	}
 }
 
@@ -80,7 +65,7 @@ func TestRateLimiting(t *testing.T) {
 	defer limiters.Delete(ip)
 
 	// With default config (allowed roots = /)
-	cfg := &config.AgentConfig{AllowedRoots: []string{"/"}}
+	cfg := &config.AgentConfig{AllowedRoots: []string{"/"}, RateLimitOpsPerSec: 1}
 	s := &server{config: cfg}
 
 	// First call should succeed

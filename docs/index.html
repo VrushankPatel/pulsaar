@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pulsaar | Production-Safe Pod File Exploration</title>
+  <meta name="description" content="Production-safe, auditable, read-only file exploration for Kubernetes pods. Safe debugging without kubectl exec or elevated privileges.">
+  <link rel="icon" type="image/png" href="logo.png">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --bg-card: rgba(20, 26, 45, 0.4);
+      --bg-card-border: rgba(99, 102, 241, 0.15);
+      --primary-glow: rgba(139, 92, 246, 0.15);
+      --accent-glow: rgba(6, 182, 212, 0.15);
+      
+      --purple: #8b5cf6;
+      --purple-hover: #a78bfa;
+      --cyan: #06b6d4;
+      --cyan-hover: #22d3ee;
+      --indigo: #6366f1;
+      
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-dark: #4b5563;
+      
+      --font-display: 'Outfit', 'Inter', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'Fira Code', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Gradients Background */
+    .bg-gradients {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: -1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .gradient-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.4;
+    }
+
+    .blob-1 {
+      width: 500px;
+      height: 500px;
+      background: var(--purple);
+      top: -10%;
+      left: -10%;
+      animation: float 20s infinite alternate;
+    }
+
+    .blob-2 {
+      width: 450px;
+      height: 450px;
+      background: var(--cyan);
+      top: 20%;
+      right: -10%;
+      animation: float 15s infinite alternate-reverse;
+    }
+
+    .blob-3 {
+      width: 600px;
+      height: 600px;
+      background: var(--indigo);
+      bottom: -10%;
+      left: 20%;
+      animation: float 25s infinite alternate;
+    }
+
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, 30px) scale(1.1); }
+    }
+
+    /* Header */
+    header {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 10;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+    }
+
+    .logo-text {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 24px;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 0%, var(--purple-hover) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover {
+      color: var(--text-main);
+    }
+
+    .btn-github {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 16px;
+      border-radius: 9999px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+    }
+
+    .btn-github:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      transform: translateY(-1px);
+    }
+
+    /* Main Container */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 24px 100px;
+      display: flex;
+      flex-direction: column;
+      gap: 80px;
+    }
+
+    /* Hero Section */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 24px;
+      margin-top: 20px;
+    }
+
+    .badge-status {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    .badge-status img {
+      height: 20px;
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 54px;
+      line-height: 1.15;
+      letter-spacing: -1.5px;
+      max-width: 800px;
+      background: linear-gradient(to right, #ffffff, #c084fc, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 18px;
+      color: var(--text-muted);
+      max-width: 650px;
+      font-weight: 400;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--purple) 0%, var(--indigo) 100%);
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      color: #fff;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.35);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 25px rgba(139, 92, 246, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 14px 28px;
+      border-radius: 8px;
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    /* Terminal Section */
+    .terminal-container {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    .terminal-header {
+      background: rgba(15, 21, 38, 0.8);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .terminal-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .terminal-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+
+    .terminal-title {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .terminal-tabs {
+      display: flex;
+      background: rgba(10, 15, 28, 0.5);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      flex-wrap: wrap;
+    }
+
+    .terminal-tab {
+      padding: 10px 16px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .terminal-tab:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .terminal-tab.active {
+      color: var(--cyan);
+      background: rgba(15, 21, 38, 0.4);
+      border-bottom-color: var(--cyan);
+    }
+
+    .terminal-body {
+      padding: 20px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      min-height: 280px;
+      background: rgba(8, 12, 23, 0.7);
+      color: #929bb0;
+      white-space: pre-wrap;
+    }
+
+    .term-prompt {
+      color: var(--purple-hover);
+    }
+
+    .term-cmd {
+      color: #f3f4f6;
+    }
+
+    .term-comment {
+      color: #56647a;
+    }
+
+    .term-dir {
+      color: #3b82f6;
+      font-weight: 500;
+    }
+
+    .term-file {
+      color: #f3f4f6;
+    }
+
+    .term-perm {
+      color: #10b981;
+    }
+
+    .term-size {
+      color: #fbbf24;
+    }
+
+    .term-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 15px;
+      background: var(--cyan);
+      margin-left: 4px;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    /* Diagram Section */
+    .diagram-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 32px;
+      text-align: center;
+      letter-spacing: -0.5px;
+    }
+
+    .section-desc {
+      font-size: 16px;
+      color: var(--text-muted);
+      text-align: center;
+      max-width: 600px;
+      margin-top: -30px;
+    }
+
+    .svg-diagram {
+      width: 100%;
+      max-width: 800px;
+      height: auto;
+      border: 1px solid var(--bg-card-border);
+      border-radius: 12px;
+      padding: 24px;
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+    }
+
+    .node {
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .node:hover rect {
+      fill: rgba(139, 92, 246, 0.25);
+      stroke: var(--purple-hover);
+      filter: drop-shadow(0 0 8px var(--purple));
+    }
+
+    .node:hover circle {
+      fill: rgba(6, 182, 212, 0.25);
+      stroke: var(--cyan-hover);
+      filter: drop-shadow(0 0 8px var(--cyan));
+    }
+
+    .edge-line {
+      stroke-dasharray: 5;
+      animation: dash 15s linear infinite;
+    }
+
+    @keyframes dash {
+      to {
+        stroke-dashoffset: -100;
+      }
+    }
+
+    /* Features Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 12px;
+      padding: 32px 24px;
+      backdrop-filter: blur(12px);
+      transition: all 0.3s;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(139, 92, 246, 0.3);
+      box-shadow: 0 10px 30px rgba(139, 92, 246, 0.1);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      background: rgba(139, 92, 246, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--purple-hover);
+      font-size: 24px;
+    }
+
+    .feature-title {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 20px;
+    }
+
+    .feature-desc {
+      font-size: 15px;
+      color: var(--text-muted);
+    }
+
+    /* Installation Section */
+    .install-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 32px;
+    }
+
+    .install-card {
+      background: rgba(15, 21, 38, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+    }
+
+    .install-type {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
+    .install-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 22px;
+    }
+
+    .code-block {
+      background: #080c16;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #929bb0;
+    }
+
+    .btn-copy {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .btn-copy:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 40px 24px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+      background: #060910;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .hero-title {
+        font-size: 40px;
+      }
+      .hero-ctas {
+        flex-direction: column;
+        width: 100%;
+        max-width: 300px;
+      }
+      .btn-primary, .btn-secondary {
+        text-align: center;
+      }
+      .nav-links {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Gradients -->
+  <div class="bg-gradients">
+    <div class="gradient-blob blob-1"></div>
+    <div class="gradient-blob blob-2"></div>
+    <div class="gradient-blob blob-3"></div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="logo-container">
+      <img src="logo.png" alt="Pulsaar Logo" class="logo-img">
+      <span class="logo-text">Pulsaar</span>
+    </div>
+    <div class="nav-links">
+      <a href="https://github.com/VrushankPatel/pulsaar" class="nav-link">Repository</a>
+      <a href="https://github.com/VrushankPatel/pulsaar/releases" class="nav-link">Releases</a>
+      <a href="https://vrushankpatel.github.io/pulsaar/index.yaml" class="nav-link">Helm Index</a>
+      <a href="https://github.com/VrushankPatel/pulsaar" class="btn-github">
+        <svg height="18" width="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    
+    <!-- Hero -->
+    <section class="hero">
+      <div class="badge-status">
+        <img src="https://github.com/VrushankPatel/pulsaar/actions/workflows/ci.yml/badge.svg" alt="CI/CD Status">
+        <img src="https://img.shields.io/github/v/release/VrushankPatel/pulsaar?color=8b5cf6" alt="Release">
+        <img src="https://img.shields.io/badge/Helm_Repo-active-06b6d4" alt="Helm Repo Active">
+      </div>
+      <h1 class="hero-title">Production-Safe Pod File Exploration</h1>
+      <p class="hero-subtitle">
+        A read-only, fully auditable gRPC agent and CLI for inspecting Kubernetes pod filesystems without kubectl exec, shells, or elevated credentials.
+      </p>
+      <div class="hero-ctas">
+        <a href="#install" class="btn-primary">Deploy Now</a>
+        <a href="https://github.com/VrushankPatel/pulsaar" class="btn-secondary">View Repository</a>
+      </div>
+    </section>
+
+    <!-- Terminal Emulator -->
+    <section class="terminal-container">
+      <div class="terminal-header">
+        <div class="terminal-dots">
+          <span class="terminal-dot dot-red"></span>
+          <span class="terminal-dot dot-yellow"></span>
+          <span class="terminal-dot dot-green"></span>
+        </div>
+        <span class="terminal-title">pulsaar-cli --session</span>
+        <div style="width: 50px;"></div>
+      </div>
+      
+      <div class="terminal-tabs">
+        <span class="terminal-tab active" onclick="switchTab('explore')">pulsaar explore</span>
+        <span class="terminal-tab" onclick="switchTab('read')">pulsaar read</span>
+        <span class="terminal-tab" onclick="switchTab('stat')">pulsaar stat</span>
+        <span class="terminal-tab" onclick="switchTab('config')">pulsaar config</span>
+      </div>
+
+      <div class="terminal-body" id="terminal-content">Loading CLI simulation...</div>
+    </section>
+
+    <!-- Diagram -->
+    <section class="diagram-section">
+      <h2 class="section-title">End-to-End Secure Architecture</h2>
+      <p class="section-desc">How Pulsaar leverages native Kubernetes security features to deliver auditable read-only path access.</p>
+      
+      <svg class="svg-diagram" viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
+        <!-- Lines / Edges -->
+        <g stroke="rgba(255,255,255,0.08)" stroke-width="2">
+          <!-- CLI -> Agent (port-forward) -->
+          <path id="line-cli-agent" class="edge-line" d="M160 160 L360 80" stroke="#8b5cf6" stroke-width="2"/>
+          <!-- CLI -> K8s API -->
+          <path d="M160 160 L360 220" />
+          <!-- K8s API -> Agent (SAR/Mutate) -->
+          <path d="M440 220 L440 120" stroke-dasharray="4"/>
+          <!-- Agent -> Aggregator (Audit) -->
+          <path id="line-agent-agg" class="edge-line" d="M480 80 L640 160" stroke="#06b6d4" stroke-width="2"/>
+        </g>
+
+        <!-- Node: Developer (CLI) -->
+        <g class="node" transform="translate(60, 120)">
+          <rect width="120" height="80" rx="8" fill="rgba(15, 23, 42, 0.8)" stroke="rgba(255,255,255,0.1)" stroke-width="1.5"/>
+          <text x="60" y="36" fill="#fff" font-size="14" font-weight="600" text-anchor="middle" font-family="Outfit">Developer</text>
+          <text x="60" y="56" fill="var(--text-muted)" font-size="11" text-anchor="middle" font-family="Fira Code">pulsaar-cli</text>
+        </g>
+
+        <!-- Node: Target Pod (Agent) -->
+        <g class="node" transform="translate(360, 40)">
+          <rect width="140" height="80" rx="8" fill="rgba(139, 92, 246, 0.05)" stroke="var(--purple)" stroke-width="1.5"/>
+          <text x="70" y="36" fill="#fff" font-size="14" font-weight="600" text-anchor="middle" font-family="Outfit">Target Pod</text>
+          <text x="70" y="56" fill="var(--purple-hover)" font-size="11" text-anchor="middle" font-family="Fira Code">pulsaar-agent</text>
+        </g>
+
+        <!-- Node: Kube APIServer -->
+        <g class="node" transform="translate(360, 180)">
+          <rect width="140" height="80" rx="8" fill="rgba(15, 23, 42, 0.8)" stroke="rgba(255,255,255,0.1)" stroke-width="1.5"/>
+          <text x="70" y="36" fill="#fff" font-size="14" font-weight="600" text-anchor="middle" font-family="Outfit">Kube API Server</text>
+          <text x="70" y="56" fill="var(--text-muted)" font-size="10" text-anchor="middle" font-family="Fira Code">Auth / RBAC checks</text>
+        </g>
+
+        <!-- Node: Aggregator -->
+        <g class="node" transform="translate(620, 120)">
+          <rect width="130" height="80" rx="8" fill="rgba(6, 182, 212, 0.05)" stroke="var(--cyan)" stroke-width="1.5"/>
+          <text x="65" y="36" fill="#fff" font-size="14" font-weight="600" text-anchor="middle" font-family="Outfit">Audit Logging</text>
+          <text x="65" y="56" fill="var(--cyan)" font-size="10" text-anchor="middle" font-family="Fira Code">aggregator</text>
+        </g>
+      </svg>
+    </section>
+
+    <!-- Features -->
+    <section class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h3 class="feature-title">Read-Only Safety</h3>
+        <p class="feature-desc">Enforces strict read-only file logic inside pods. No file modification operations are exposed or possible.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔑</div>
+        <h3 class="feature-title">mTLS Security</h3>
+        <p class="feature-desc">Automatic generation of self-signed TLS certificates for secure and encrypted end-to-end communication.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📝</div>
+        <h3 class="feature-title">Auditable Logs</h3>
+        <p class="feature-desc">Every execution path is logged and securely reported to a central aggregator. Failures block the request.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3 class="feature-title">Sidecar or Ephemeral</h3>
+        <p class="feature-desc">Deploy permanently as a sidecar via admission controller, or inject temporarily as an ephemeral container.</p>
+      </div>
+    </section>
+
+    <!-- Installation -->
+    <section id="install" class="install-section">
+      <div class="install-card">
+        <span class="install-type">Client CLI</span>
+        <h3 class="install-title">Install CLI via Homebrew</h3>
+        <p class="feature-desc">Get the pulsaar control utility on macOS or Linux.</p>
+        <div class="code-block">
+          <span>brew tap VrushankPatel/homebrew-pulsaar && brew install pulsaar-cli</span>
+          <button class="btn-copy" onclick="copyText('brew tap VrushankPatel/homebrew-pulsaar && brew install pulsaar-cli')">📋</button>
+        </div>
+      </div>
+
+      <div class="install-card">
+        <span class="install-type">Kubernetes Cluster</span>
+        <h3 class="install-title">Deploy Agent via Helm</h3>
+        <p class="feature-desc">Deploy mutating webhook and audit logger in your cluster.</p>
+        <div class="code-block">
+          <span>helm repo add pulsaar https://vrushankpatel.github.io/pulsaar && helm install pulsaar pulsaar/pulsaar</span>
+          <button class="btn-copy" onclick="copyText('helm repo add pulsaar https://vrushankpatel.github.io/pulsaar && helm install pulsaar pulsaar/pulsaar')">📋</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p>Pulsaar is released under the Apache 2.0 License. Maintained by Vrushank Patel.</p>
+    <p style="margin-top: 10px; font-size: 12px; opacity: 0.6;">© 2026 Pulsaar Project.</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    const terminals = {
+      explore: `<span class="term-prompt">$</span> <span class="term-cmd">pulsaar explore --pod app-prod-9a2c -n production --path /var/log</span>
+<span class="term-comment"># Connecting via secure TLS port-forward...</span>
+drwxr-xr-x  root  4096  2026-06-30 02:40:11  <span class="term-dir">nginx</span>
+-rw-r--r--  root  21094 2026-06-30 02:55:00  <span class="term-file">syslog</span>
+-rw-r-----  root  98211 2026-06-30 02:59:12  <span class="term-file">auth.log</span>
+<span class="term-prompt">$</span><span class="term-cursor"></span>`,
+      read: `<span class="term-prompt">$</span> <span class="term-cmd">pulsaar read --pod app-prod-9a2c -n production --path /var/log/nginx/access.log</span>
+<span class="term-comment"># Requesting file read chunk...</span>
+127.0.0.1 - - [30/Jun/2026:02:55:01 +0000] "GET /healthz HTTP/1.1" 200 12
+10.244.0.1 - - [30/Jun/2026:02:56:04 +0000] "GET /api/v1/data HTTP/1.1" 200 405
+10.244.0.1 - - [30/Jun/2026:02:58:12 +0000] "POST /api/v1/update HTTP/1.1" 500 24
+<span class="term-prompt">$</span><span class="term-cursor"></span>`,
+      stat: `<span class="term-prompt">$</span> <span class="term-cmd">pulsaar stat --pod app-prod-9a2c -n production --path /var/log/auth.log</span>
+Name: auth.log
+IsDir: false
+Size: 98211 bytes
+Mode: -rw-r-----
+Modified: 2026-06-30 02:59:12
+<span class="term-prompt">$</span><span class="term-cursor"></span>`,
+      config: `<span class="term-prompt">$</span> <span class="term-cmd">pulsaar config set-denylist --pod app-prod-9a2c -n production --paths /var/log/auth.log</span>
+Pod production/app-prod-9a2c annotations updated with denied paths: /var/log/auth.log
+<span class="term-prompt">$</span><span class="term-cursor"></span>`
+    };
+
+    function switchTab(tabName) {
+      // Switch active class
+      document.querySelectorAll('.terminal-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.innerText.includes(tabName)) {
+          tab.classList.add('active');
+        }
+      });
+      // Replace content
+      document.getElementById('terminal-content').innerHTML = terminals[tabName];
+    }
+
+    function copyText(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Command copied to clipboard!");
+      });
+    }
+
+    // Initialize first tab
+    switchTab('explore');
+  </script>
+</body>
+</html>

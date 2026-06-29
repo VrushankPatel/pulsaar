@@ -3,16 +3,11 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
 	"crypto/tls"
-	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
-	"math/big"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -21,6 +16,7 @@ import (
 	"time"
 
 	grpcPrometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
@@ -41,6 +37,27 @@ var (
 	date    = "unknown"
 )
 
+var (
+	auditLogErrorsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "pulsaar_audit_log_errors_total",
+			Help: "Total number of audit log send failures",
+		},
+		[]string{"operation", "error_type"},
+	)
+	rateLimitExceededTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "pulsaar_rate_limit_exceeded_total",
+			Help: "Total number of rate limit rejections",
+		},
+		[]string{"client_ip"},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(auditLogErrorsTotal, rateLimitExceededTotal)
+}
+
 type server struct {
 	api.UnimplementedPulsaarAgentServer
 	config *config.AgentConfig
@@ -48,112 +65,94 @@ type server struct {
 
 var limiters sync.Map // map[string]*rate.Limiter
 
-func getLimiterForIP(ctx context.Context) *rate.Limiter {
+func getClientIP(ctx context.Context) string {
 	p, ok := peer.FromContext(ctx)
 	if !ok {
-		// Fallback: allow unlimited if can't determine peer
-		return rate.NewLimiter(rate.Inf, 1)
+		return "unknown"
 	}
 	addr := p.Addr.String()
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		host = addr
 	}
-	limiter, ok := limiters.Load(host)
+	return host
+}
+
+func (s *server) getLimiterForIP(ctx context.Context) *rate.Limiter {
+	clientIP := getClientIP(ctx)
+	if clientIP == "unknown" {
+		return rate.NewLimiter(rate.Inf, 1)
+	}
+	limiter, ok := limiters.Load(clientIP)
 	if !ok {
-		limiter = rate.NewLimiter(rate.Limit(10), 10) // 10 operations per second per IP
-		limiters.Store(host, limiter)
+		limit := rate.Limit(s.config.RateLimitOpsPerSec)
+		limiter = rate.NewLimiter(limit, s.config.RateLimitOpsPerSec)
+		limiters.Store(clientIP, limiter)
 	}
 	return limiter.(*rate.Limiter)
 }
 
-func loadOrGenerateCert(certFile, keyFile string) (tls.Certificate, error) {
-	if certFile != "" && keyFile != "" {
-		return tls.LoadX509KeyPair(certFile, keyFile)
-	}
+func auditLog(ctx context.Context, operation, path string) error {
+	clientIP := getClientIP(ctx)
+	timestamp := time.Now().Format(time.RFC3339)
+	slog.Info("Audit request", "operation", operation, "path", path, "client_ip", clientIP, "timestamp", timestamp)
 
-	// Fallback to self-signed for MVP
-	priv, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return tls.Certificate{}, err
-	}
-
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			Organization: []string{"Pulsaar MVP"},
-		},
-		NotBefore:   time.Now(),
-		NotAfter:    time.Now().Add(time.Hour * 24 * 365),
-		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		IPAddresses: []net.IP{net.ParseIP("127.0.0.1")},
-		DNSNames:    []string{"localhost"},
-	}
-
-	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
-	if err != nil {
-		return tls.Certificate{}, err
-	}
-
-	return tls.Certificate{
-		Certificate: [][]byte{certDER},
-		PrivateKey:  priv,
-	}, nil
-}
-
-func loadCACertPool(caFile string) (*x509.CertPool, error) {
-	if caFile == "" {
-		return nil, nil // No client cert verification
-	}
-
-	caCert, err := os.ReadFile(caFile)
-	if err != nil {
-		return nil, err
-	}
-
-	caCertPool := x509.NewCertPool()
-	if !caCertPool.AppendCertsFromPEM(caCert) {
-		return nil, fmt.Errorf("failed to parse CA certificate")
-	}
-
-	return caCertPool, nil
-}
-
-func auditLog(operation, path string) {
-	log.Printf("Audit: %s request for path: %s", operation, path)
-	if url := os.Getenv("PULSAAR_AUDIT_AGGREGATOR_URL"); url != "" {
+	url := os.Getenv("PULSAAR_AUDIT_AGGREGATOR_URL")
+	if url != "" {
 		hostname, _ := os.Hostname()
 		data := map[string]any{
-			"timestamp": time.Now().Format(time.RFC3339),
+			"timestamp": timestamp,
 			"operation": operation,
 			"path":      path,
 			"agent_id":  hostname,
+			"client_ip": clientIP,
 		}
-		jsonData, _ := json.Marshal(data)
+		jsonData, err := json.Marshal(data)
+		if err != nil {
+			slog.Error("Failed to marshal audit log", "error", err, "operation", operation, "path", path)
+			auditLogErrorsTotal.WithLabelValues(operation, "json_marshal_failed").Inc()
+			return fmt.Errorf("failed to marshal audit log: %w", err)
+		}
+
 		resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 		if resp != nil {
 			defer func() { _ = resp.Body.Close() }()
 		}
 		if err != nil {
-			log.Printf("Failed to send audit log: %v", err)
+			slog.Error("Failed to send audit log to aggregator", "error", err, "operation", operation, "path", path)
+			auditLogErrorsTotal.WithLabelValues(operation, "http_post_failed").Inc()
+			return fmt.Errorf("failed to send audit log: %w", err)
+		}
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			slog.Error("Aggregator returned non-success status", "status", resp.Status, "operation", operation, "path", path)
+			auditLogErrorsTotal.WithLabelValues(operation, "http_status_error").Inc()
+			return fmt.Errorf("aggregator returned status: %s", resp.Status)
 		}
 	}
+	return nil
 }
 
 func (s *server) ListDirectory(ctx context.Context, req *api.ListRequest) (*api.ListResponse, error) {
-	if !getLimiterForIP(ctx).Allow() {
+	if !s.getLimiterForIP(ctx).Allow() {
+		clientIP := getClientIP(ctx)
+		rateLimitExceededTotal.WithLabelValues(clientIP).Inc()
+		slog.Warn("Rate limit exceeded", "client_ip", clientIP)
 		return nil, status.Errorf(codes.ResourceExhausted, "Rate limit exceeded. Please wait before retrying.")
 	}
-	auditLog("ListDirectory", req.Path)
+
+	if err := auditLog(ctx, "ListDirectory", req.Path); err != nil {
+		return nil, status.Errorf(codes.Internal, "audit failure")
+	}
 
 	if !s.config.IsPathAllowed(req.Path, req.AllowedRoots) {
-		return nil, status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed.", req.Path)
+		slog.Warn("Access denied", "path", req.Path, "client_ip", getClientIP(ctx))
+		return nil, status.Errorf(codes.PermissionDenied, "access denied")
 	}
 
 	entries, err := os.ReadDir(req.Path)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Unable to list contents of directory '%s': %v", req.Path, err)
+		slog.Error("Failed to list directory contents", "path", req.Path, "error", err, "client_ip", getClientIP(ctx))
+		return nil, status.Errorf(codes.Internal, "internal error")
 	}
 
 	var fileInfos []*api.FileInfo
@@ -175,18 +174,26 @@ func (s *server) ListDirectory(ctx context.Context, req *api.ListRequest) (*api.
 }
 
 func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatResponse, error) {
-	if !getLimiterForIP(ctx).Allow() {
+	if !s.getLimiterForIP(ctx).Allow() {
+		clientIP := getClientIP(ctx)
+		rateLimitExceededTotal.WithLabelValues(clientIP).Inc()
+		slog.Warn("Rate limit exceeded", "client_ip", clientIP)
 		return nil, status.Errorf(codes.ResourceExhausted, "Rate limit exceeded. Please wait before retrying.")
 	}
-	auditLog("Stat", req.Path)
+
+	if err := auditLog(ctx, "Stat", req.Path); err != nil {
+		return nil, status.Errorf(codes.Internal, "audit failure")
+	}
 
 	if !s.config.IsPathAllowed(req.Path, req.AllowedRoots) {
-		return nil, status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed.", req.Path)
+		slog.Warn("Access denied", "path", req.Path, "client_ip", getClientIP(ctx))
+		return nil, status.Errorf(codes.PermissionDenied, "access denied")
 	}
 
 	info, err := os.Stat(req.Path)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Unable to get information for path '%s': %v", req.Path, err)
+		slog.Error("Failed to get information for path", "path", req.Path, "error", err, "client_ip", getClientIP(ctx))
+		return nil, status.Errorf(codes.Internal, "internal error")
 	}
 
 	return &api.StatResponse{
@@ -201,13 +208,20 @@ func (s *server) Stat(ctx context.Context, req *api.StatRequest) (*api.StatRespo
 }
 
 func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadResponse, error) {
-	if !getLimiterForIP(ctx).Allow() {
+	if !s.getLimiterForIP(ctx).Allow() {
+		clientIP := getClientIP(ctx)
+		rateLimitExceededTotal.WithLabelValues(clientIP).Inc()
+		slog.Warn("Rate limit exceeded", "client_ip", clientIP)
 		return nil, status.Errorf(codes.ResourceExhausted, "Rate limit exceeded. Please wait before retrying.")
 	}
-	auditLog("ReadFile", req.Path)
+
+	if err := auditLog(ctx, "ReadFile", req.Path); err != nil {
+		return nil, status.Errorf(codes.Internal, "audit failure")
+	}
 
 	if !s.config.IsPathAllowed(req.Path, req.AllowedRoots) {
-		return nil, status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed.", req.Path)
+		slog.Warn("Access denied", "path", req.Path, "client_ip", getClientIP(ctx))
+		return nil, status.Errorf(codes.PermissionDenied, "access denied")
 	}
 
 	readLen := req.Length
@@ -215,19 +229,22 @@ func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadR
 		readLen = config.MaxReadSize
 	}
 	if readLen > config.MaxReadSize {
+		slog.Warn("Requested read length exceeds maximum allowed size", "requested", readLen, "max", config.MaxReadSize, "client_ip", getClientIP(ctx))
 		return nil, status.Errorf(codes.InvalidArgument, "Requested read length (%d bytes) exceeds the maximum allowed size of %d bytes", readLen, config.MaxReadSize)
 	}
 
 	file, err := os.Open(req.Path)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Unable to open file '%s' for reading: %v", req.Path, err)
+		slog.Error("Failed to open file for reading", "path", req.Path, "error", err, "client_ip", getClientIP(ctx))
+		return nil, status.Errorf(codes.Internal, "internal error")
 	}
 	defer func() { _ = file.Close() }()
 
 	data := make([]byte, readLen)
 	n, err := file.ReadAt(data, req.Offset)
 	if err != nil && err != io.EOF {
-		return nil, status.Errorf(codes.Internal, "Unable to read file '%s': %v", req.Path, err)
+		slog.Error("Failed to read file", "path", req.Path, "error", err, "client_ip", getClientIP(ctx))
+		return nil, status.Errorf(codes.Internal, "internal error")
 	}
 
 	eof := int64(n) < readLen || err == io.EOF
@@ -235,13 +252,21 @@ func (s *server) ReadFile(ctx context.Context, req *api.ReadRequest) (*api.ReadR
 }
 
 func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_StreamFileServer) error {
-	if !getLimiterForIP(stream.Context()).Allow() {
+	ctx := stream.Context()
+	if !s.getLimiterForIP(ctx).Allow() {
+		clientIP := getClientIP(ctx)
+		rateLimitExceededTotal.WithLabelValues(clientIP).Inc()
+		slog.Warn("Rate limit exceeded", "client_ip", clientIP)
 		return status.Errorf(codes.ResourceExhausted, "Rate limit exceeded. Please wait before retrying.")
 	}
-	auditLog("StreamFile", req.Path)
+
+	if err := auditLog(ctx, "StreamFile", req.Path); err != nil {
+		return status.Errorf(codes.Internal, "audit failure")
+	}
 
 	if !s.config.IsPathAllowed(req.Path, req.AllowedRoots) {
-		return status.Errorf(codes.PermissionDenied, "Access to path '%s' is not allowed.", req.Path)
+		slog.Warn("Access denied", "path", req.Path, "client_ip", getClientIP(ctx))
+		return status.Errorf(codes.PermissionDenied, "access denied")
 	}
 
 	chunkSize := req.ChunkSize
@@ -249,12 +274,14 @@ func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_Stre
 		chunkSize = 64 * 1024 // 64KB default
 	}
 	if chunkSize > config.MaxReadSize {
+		slog.Warn("Requested chunk size exceeds maximum allowed size", "requested", chunkSize, "max", config.MaxReadSize, "client_ip", getClientIP(ctx))
 		return status.Errorf(codes.InvalidArgument, "Requested chunk size (%d bytes) exceeds the maximum allowed size of %d bytes", chunkSize, config.MaxReadSize)
 	}
 
 	file, err := os.Open(req.Path)
 	if err != nil {
-		return status.Errorf(codes.Internal, "Unable to open file '%s' for streaming: %v", req.Path, err)
+		slog.Error("Failed to open file for streaming", "path", req.Path, "error", err, "client_ip", getClientIP(ctx))
+		return status.Errorf(codes.Internal, "internal error")
 	}
 	defer func() { _ = file.Close() }()
 
@@ -262,13 +289,15 @@ func (s *server) StreamFile(req *api.StreamRequest, stream api.PulsaarAgent_Stre
 	for {
 		n, err := file.Read(buf)
 		if err != nil && err != io.EOF {
-			return status.Errorf(codes.Internal, "Unable to read file '%s' during streaming: %v", req.Path, err)
+			slog.Error("Failed to read file during streaming", "path", req.Path, "error", err, "client_ip", getClientIP(ctx))
+			return status.Errorf(codes.Internal, "internal error")
 		}
 		if n == 0 {
 			break
 		}
 		eof := err == io.EOF
 		if err := stream.Send(&api.ReadResponse{Data: buf[:n], Eof: eof}); err != nil {
+			slog.Error("Failed to send stream chunk to client", "error", err, "client_ip", getClientIP(ctx))
 			return err
 		}
 		if eof {
@@ -289,20 +318,25 @@ func (s *server) Health(ctx context.Context, req *emptypb.Empty) (*api.HealthRes
 }
 
 func main() {
+	// Configure structured JSON logging
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	cfg, err := config.LoadAgentConfig()
 	if err != nil {
-		log.Printf("Warning: failed to load full agent config: %v", err)
-	}
-	// Fallback/Defaults are handled inside LoadAgentConfig, so cfg should be usable.
-
-	cert, err := loadOrGenerateCert(cfg.TLSCertFile, cfg.TLSKeyFile)
-	if err != nil {
-		log.Fatalf("failed to load or generate cert: %v", err)
+		slog.Warn("Failed to load full agent config", "error", err)
 	}
 
-	caCertPool, err := loadCACertPool(cfg.TLSCaFile)
+	cert, err := cfg.LoadTLSCertificate()
 	if err != nil {
-		log.Fatalf("failed to load CA cert pool: %v", err)
+		slog.Error("Failed to load or generate cert", "error", err)
+		os.Exit(1)
+	}
+
+	caCertPool, err := cfg.LoadCACertPool()
+	if err != nil {
+		slog.Error("Failed to load CA cert pool", "error", err)
+		os.Exit(1)
 	}
 
 	tlsConfig := &tls.Config{
@@ -317,7 +351,8 @@ func main() {
 
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		slog.Error("Failed to listen", "error", err)
+		os.Exit(1)
 	}
 
 	s := grpc.NewServer(
@@ -330,14 +365,16 @@ func main() {
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		log.Printf("Metrics server listening on :9090")
+		slog.Info("Metrics server listening on :9090")
 		if err := http.ListenAndServe(":9090", nil); err != nil {
-			log.Printf("Failed to start metrics server: %v", err)
+			slog.Error("Failed to start metrics server", "error", err)
 		}
 	}()
 
-	log.Printf("Pulsaar agent listening on :50051 with TLS")
+	slog.Info("Pulsaar agent listening on :50051 with TLS", "version", version, "commit", commit)
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		slog.Error("Failed to serve gRPC", "error", err)
+		os.Exit(1)
 	}
 }
+

@@ -2,9 +2,19 @@ package config
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"fmt"
+	"math/big"
+	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -18,11 +28,12 @@ const (
 
 // AgentConfig holds configuration for the agent
 type AgentConfig struct {
-	AllowedRoots []string
-	DeniedPaths  []string
-	TLSCertFile  string
-	TLSKeyFile   string
-	TLSCaFile    string
+	AllowedRoots        []string
+	DeniedPaths         []string
+	TLSCertFile         string
+	TLSKeyFile          string
+	TLSCaFile           string
+	RateLimitOpsPerSec  int
 }
 
 // CLIConfig holds configuration for the CLI
@@ -41,6 +52,18 @@ func LoadAgentConfig() (*AgentConfig, error) {
 	config.TLSCertFile = os.Getenv("PULSAAR_TLS_CERT_FILE")
 	config.TLSKeyFile = os.Getenv("PULSAAR_TLS_KEY_FILE")
 	config.TLSCaFile = os.Getenv("PULSAAR_TLS_CA_FILE")
+
+	// Load Rate Limit Config
+	rateLimit := os.Getenv("PULSAAR_RATE_LIMIT_OPS_PER_SEC")
+	if rateLimit == "" {
+		config.RateLimitOpsPerSec = 10
+	} else {
+		limit, err := strconv.Atoi(rateLimit)
+		if err != nil {
+			return nil, fmt.Errorf("invalid PULSAAR_RATE_LIMIT_OPS_PER_SEC: %w", err)
+		}
+		config.RateLimitOpsPerSec = limit
+	}
 
 	// Load Denied Paths
 	config.DeniedPaths = loadDeniedPaths()
@@ -114,15 +137,91 @@ func LoadCLIConfig() (*CLIConfig, error) {
 }
 
 func loadDeniedPaths() []string {
-	denylist := os.Getenv("PULSAAR_DENIED_PATHS")
-	if denylist == "" {
-		return []string{}
+	namespace := getNamespace()
+
+	// 1. Pod Annotations
+	podName := os.Getenv("PULSAAR_POD_NAME")
+	if namespace != "" && podName != "" {
+		paths, err := loadDeniedPathsFromPodAnnotations(namespace, podName)
+		if err == nil && paths != nil {
+			return paths
+		}
 	}
-	paths := strings.Split(denylist, ",")
-	for i, d := range paths {
-		paths[i] = strings.TrimSpace(d)
+
+	// 2. ConfigMap (pulsaar-denylist)
+	if namespace != "" {
+		paths, err := loadDeniedPathsFromConfigMap(namespace)
+		if err == nil && paths != nil {
+			return paths
+		}
 	}
-	return paths
+
+	// 3. Environment Variable
+	pathsStr := os.Getenv("PULSAAR_DENIED_PATHS")
+	if pathsStr != "" {
+		paths := strings.Split(pathsStr, ",")
+		for i, p := range paths {
+			paths[i] = strings.TrimSpace(p)
+		}
+		return paths
+	}
+
+	// Default: no denied paths
+	return []string{}
+}
+
+func loadDeniedPathsFromConfigMap(namespace string) ([]string, error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	cm, err := clientset.CoreV1().ConfigMaps(namespace).Get(context.TODO(), "pulsaar-denylist", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	pathsStr, ok := cm.Data["denied-paths"]
+	if !ok {
+		return nil, nil
+	}
+	if pathsStr == "" {
+		return []string{}, nil
+	}
+	paths := strings.Split(pathsStr, ",")
+	for i, p := range paths {
+		paths[i] = strings.TrimSpace(p)
+	}
+	return paths, nil
+}
+
+func loadDeniedPathsFromPodAnnotations(namespace, podName string) ([]string, error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	pod, err := clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	pathsStr, ok := pod.Annotations["pulsaar.io/denied-paths"]
+	if !ok {
+		return nil, nil
+	}
+	if pathsStr == "" {
+		return []string{}, nil
+	}
+	paths := strings.Split(pathsStr, ",")
+	for i, p := range paths {
+		paths[i] = strings.TrimSpace(p)
+	}
+	return paths, nil
 }
 
 func loadAllowedRoots() ([]string, error) {
@@ -223,3 +322,59 @@ func loadAllowedRootsFromPodAnnotations(namespace, podName string) ([]string, er
 	}
 	return roots, nil
 }
+
+// LoadTLSCertificate loads TLS keypair or generates a fallback self-signed cert
+func (c *AgentConfig) LoadTLSCertificate() (tls.Certificate, error) {
+	if c.TLSCertFile != "" && c.TLSKeyFile != "" {
+		return tls.LoadX509KeyPair(c.TLSCertFile, c.TLSKeyFile)
+	}
+
+	// Fallback to self-signed
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Organization: []string{"Pulsaar MVP"},
+		},
+		NotBefore:   time.Now(),
+		NotAfter:    time.Now().Add(time.Hour * 24 * 365),
+		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		IPAddresses: []net.IP{net.ParseIP("127.0.0.1")},
+		DNSNames:    []string{"localhost"},
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	return tls.Certificate{
+		Certificate: [][]byte{certDER},
+		PrivateKey:  priv,
+	}, nil
+}
+
+// LoadCACertPool loads the CA cert file into a cert pool
+func (c *AgentConfig) LoadCACertPool() (*x509.CertPool, error) {
+	if c.TLSCaFile == "" {
+		return nil, nil // No client cert verification
+	}
+
+	caCert, err := os.ReadFile(c.TLSCaFile)
+	if err != nil {
+		return nil, err
+	}
+
+	caCertPool := x509.NewCertPool()
+	if !caCertPool.AppendCertsFromPEM(caCert) {
+		return nil, fmt.Errorf("failed to parse CA certificate")
+	}
+
+	return caCertPool, nil
+}
+
