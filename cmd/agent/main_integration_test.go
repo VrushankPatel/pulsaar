@@ -63,7 +63,11 @@ func TestIntegrationAgentGRPCTLS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to connect to server: %v", err)
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			t.Errorf("failed to close gRPC client: %v", err)
+		}
+	}()
 
 	client := api.NewPulsaarAgentClient(conn)
 

@@ -5,14 +5,28 @@ import (
 	"testing"
 )
 
+func mustSetEnv(t *testing.T, key, value string) {
+	t.Helper()
+	if err := os.Setenv(key, value); err != nil {
+		t.Fatalf("failed to set %s: %v", key, err)
+	}
+}
+
+func mustUnsetEnv(t *testing.T, key string) {
+	t.Helper()
+	if err := os.Unsetenv(key); err != nil {
+		t.Fatalf("failed to unset %s: %v", key, err)
+	}
+}
+
 func TestConfigIntegrationDefaults(t *testing.T) {
 	// Setup test environment variables
-	os.Setenv("PULSAAR_TLS_CERT_FILE", "/path/to/cert")
-	os.Setenv("PULSAAR_TLS_KEY_FILE", "/path/to/key")
-	os.Setenv("PULSAAR_TLS_CA_FILE", "/path/to/ca")
-	os.Setenv("PULSAAR_RATE_LIMIT_OPS_PER_SEC", "25")
-	os.Setenv("PULSAAR_DENIED_PATHS", "/etc,/root")
-	os.Setenv("PULSAAR_ALLOWED_ROOTS", "/var/log,/var/tmp")
+	mustSetEnv(t, "PULSAAR_TLS_CERT_FILE", "/path/to/cert")
+	mustSetEnv(t, "PULSAAR_TLS_KEY_FILE", "/path/to/key")
+	mustSetEnv(t, "PULSAAR_TLS_CA_FILE", "/path/to/ca")
+	mustSetEnv(t, "PULSAAR_RATE_LIMIT_OPS_PER_SEC", "25")
+	mustSetEnv(t, "PULSAAR_DENIED_PATHS", "/etc,/root")
+	mustSetEnv(t, "PULSAAR_ALLOWED_ROOTS", "/var/log,/var/tmp")
 
 	cfg, err := LoadAgentConfig()
 	if err != nil {
@@ -33,19 +47,19 @@ func TestConfigIntegrationDefaults(t *testing.T) {
 	}
 
 	// Clean up environment variables
-	os.Unsetenv("PULSAAR_TLS_CERT_FILE")
-	os.Unsetenv("PULSAAR_TLS_KEY_FILE")
-	os.Unsetenv("PULSAAR_TLS_CA_FILE")
-	os.Unsetenv("PULSAAR_RATE_LIMIT_OPS_PER_SEC")
-	os.Unsetenv("PULSAAR_DENIED_PATHS")
-	os.Unsetenv("PULSAAR_ALLOWED_ROOTS")
+	mustUnsetEnv(t, "PULSAAR_TLS_CERT_FILE")
+	mustUnsetEnv(t, "PULSAAR_TLS_KEY_FILE")
+	mustUnsetEnv(t, "PULSAAR_TLS_CA_FILE")
+	mustUnsetEnv(t, "PULSAAR_RATE_LIMIT_OPS_PER_SEC")
+	mustUnsetEnv(t, "PULSAAR_DENIED_PATHS")
+	mustUnsetEnv(t, "PULSAAR_ALLOWED_ROOTS")
 }
 
 func TestConfigLoadFallback(t *testing.T) {
 	// Test default fallback logic
-	os.Unsetenv("PULSAAR_ALLOWED_ROOTS")
-	os.Unsetenv("PULSAAR_DENIED_PATHS")
-	os.Unsetenv("PULSAAR_RATE_LIMIT_OPS_PER_SEC")
+	mustUnsetEnv(t, "PULSAAR_ALLOWED_ROOTS")
+	mustUnsetEnv(t, "PULSAAR_DENIED_PATHS")
+	mustUnsetEnv(t, "PULSAAR_RATE_LIMIT_OPS_PER_SEC")
 
 	cfg, err := LoadAgentConfig()
 	if err != nil {

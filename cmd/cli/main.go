@@ -278,7 +278,7 @@ func injectEphemeralContainer(podName, namespace string, cfg *config.CLIConfig) 
 
 	_, err = clientset.CoreV1().Pods(namespace).UpdateEphemeralContainers(context.TODO(), podName, pod, metav1.UpdateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to inject ephemeral container: %v\nTroubleshoot: Check if pod allows ephemeral containers (alpha feature on older K8s). Try --connection-method port-forward instead.", err)
+		return fmt.Errorf("failed to inject ephemeral container: %v; troubleshoot: check if the cluster allows ephemeral containers and try --connection-method port-forward instead", err)
 	}
 
 	fmt.Fprintf(os.Stderr, "Waiting for ephemeral container to start (timeout: 30s)...\n")
@@ -292,7 +292,7 @@ func injectEphemeralContainer(podName, namespace string, cfg *config.CLIConfig) 
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("timeout waiting for ephemeral container to start. Check pod logs: kubectl logs %s -n %s -c pulsaar-agent. Suggestions: verify the image exists and can be pulled by the node.", podName, namespace)
+			return fmt.Errorf("timeout waiting for ephemeral container to start; check pod logs with kubectl logs %s -n %s -c pulsaar-agent and verify the image exists and can be pulled by the node", podName, namespace)
 		case <-ticker.C:
 			pod, err := clientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 			if err != nil {

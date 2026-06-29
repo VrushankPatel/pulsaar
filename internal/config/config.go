@@ -69,18 +69,7 @@ func LoadAgentConfig() (*AgentConfig, error) {
 	config.DeniedPaths = loadDeniedPaths()
 
 	// Load Allowed Roots
-	var err error
-	config.AllowedRoots, err = loadAllowedRoots()
-	if err != nil {
-		// Log error but fallback to default if strictly necessary, or return error.
-		// For now, consistent with original behavior, we return error if k8s fails BUT
-		// original code fell back to env vars if k8s failed or wasn't present?
-		// Re-reading original code:
-		// It tries PodAnnotations, then ConfigMap, then Env Var.
-		// If k8s client fails, it continues to next method (Env var fallback is at the end).
-		// So we should handle errors gracefully and fall through.
-		// Let's implement loadAllowedRoots to match that logic.
-	}
+	config.AllowedRoots = loadAllowedRoots()
 
 	// Fallback logic is inside loadAllowedRoots, so if it returns nil/empty without error, it means strictly empty?
 	// The original code sets default to "/" if nothing found.
@@ -224,7 +213,7 @@ func loadDeniedPathsFromPodAnnotations(namespace, podName string) ([]string, err
 	return paths, nil
 }
 
-func loadAllowedRoots() ([]string, error) {
+func loadAllowedRoots() []string {
 	namespace := getNamespace()
 
 	// 1. Pod Annotations
@@ -232,7 +221,7 @@ func loadAllowedRoots() ([]string, error) {
 	if namespace != "" && podName != "" {
 		roots, err := loadAllowedRootsFromPodAnnotations(namespace, podName)
 		if err == nil && roots != nil {
-			return roots, nil
+			return roots
 		}
 	}
 
@@ -240,7 +229,7 @@ func loadAllowedRoots() ([]string, error) {
 	if namespace != "" {
 		roots, err := loadAllowedRootsFromConfigMap(namespace)
 		if err == nil && roots != nil {
-			return roots, nil
+			return roots
 		}
 	}
 
@@ -251,11 +240,11 @@ func loadAllowedRoots() ([]string, error) {
 		for i, root := range roots {
 			roots[i] = strings.TrimSpace(root)
 		}
-		return roots, nil
+		return roots
 	}
 
 	// Default
-	return []string{"/"}, nil
+	return []string{"/"}
 }
 
 func getNamespace() string {
@@ -377,4 +366,3 @@ func (c *AgentConfig) LoadCACertPool() (*x509.CertPool, error) {
 
 	return caCertPool, nil
 }
-
