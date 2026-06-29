@@ -36,8 +36,6 @@ jobs:
           fail_ci_if_error: false
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
-        with:
-          version: v1.60.3
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
       - name: Run govulncheck
