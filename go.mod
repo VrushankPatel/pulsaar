@@ -7,7 +7,7 @@ require (
 	github.com/prometheus/client_golang v1.20.4
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/time v0.9.0
-	google.golang.org/grpc v1.64.1
+	google.golang.org/grpc v1.70.0
 	google.golang.org/protobuf v1.36.10
 	k8s.io/api v0.35.0
 	k8s.io/apimachinery v0.35.0
