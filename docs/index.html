@@ -654,6 +654,7 @@
         <span class="terminal-tab" onclick="switchTab('read')">pulsaar read</span>
         <span class="terminal-tab" onclick="switchTab('stat')">pulsaar stat</span>
         <span class="terminal-tab" onclick="switchTab('config')">pulsaar config</span>
+        <span class="terminal-tab" onclick="switchTab('tui')">pulsaar tui</span>
       </div>
 
       <div class="terminal-body" id="terminal-content">Loading CLI simulation...</div>
@@ -728,9 +729,9 @@
       </div>
 
       <div class="feature-card">
-        <div class="feature-icon">⚡</div>
-        <h3 class="feature-title">Sidecar or Ephemeral</h3>
-        <p class="feature-desc">Deploy permanently as a sidecar via admission controller, or inject temporarily as an ephemeral container.</p>
+        <div class="feature-icon">💻</div>
+        <h3 class="feature-title">Interactive TUI</h3>
+        <p class="feature-desc">Navigate namespaces, pods, and files with a gorgeous K9s-style Terminal User Interface directly from your terminal.</p>
       </div>
     </section>
 
@@ -789,7 +790,19 @@ Modified: 2026-06-30 02:59:12
 <span class="term-prompt">$</span><span class="term-cursor"></span>`,
       config: `<span class="term-prompt">$</span> <span class="term-cmd">pulsaar config set-denylist --pod app-prod-9a2c -n production --paths /var/log/auth.log</span>
 Pod production/app-prod-9a2c annotations updated with denied paths: /var/log/auth.log
-<span class="term-prompt">$</span><span class="term-cursor"></span>`
+<span class="term-prompt">$</span><span class="term-cursor"></span>`,
+      tui: `<span class="term-prompt">$</span> <span class="term-cmd">pulsaar tui -n production</span>
+<span class="term-comment"># Launching interactive file explorer...</span>
+┌─ Namespaces ────────┐ ┌────────────────────────────────────────────────────────┐
+│ default             │ │ <span class="term-perm">Name</span>          <span class="term-perm">Size</span>         <span class="term-perm">Type</span>        <span class="term-perm">ModTime</span>            │
+│ kube-system         │ │ <span class="term-dir">..</span>            -            dir         -                  │
+│ [purple]production[/]         │ │ <span class="term-dir">nginx</span>         4096         dir         2026-06-30 02:40   │
+└─────────────────────┘ │ syslog        21094        file        2026-06-30 02:55   │
+┌─ Pods ──────────────┐ │ auth.log      98211        file        2026-06-30 02:59   │
+│ app-api-3b1a        │ │                                                        │
+│ [purple]app-prod-9a2c[/]     │ │                                                        │
+└─────────────────────┘ └────────────────────────────────────────────────────────┘
+[cyan]Tab[white]: Switch Panel   [cyan]Enter[white]: Select   [cyan]Backspace[white]: Up Dir   [cyan]V[white]: View File   [cyan]Q[white]: Exit`
     };
 
     function switchTab(tabName) {

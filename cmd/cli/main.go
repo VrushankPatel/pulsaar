@@ -517,6 +517,7 @@ func main() {
 	rootCmd.AddCommand(statCmd)
 	rootCmd.AddCommand(healthCmd)
 	rootCmd.AddCommand(configCmd)
+	rootCmd.AddCommand(tuiCmd)
 
 	completionCmd := &cobra.Command{
 		Use:   "completion [bash|zsh|fish|powershell]",

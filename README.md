@@ -129,6 +129,12 @@ Check connection state and health details of the agent inside the pod:
 pulsaar health --pod my-production-pod -n default
 ```
 
+### Interactive TUI Explorer
+Launch a gorgeous K9s-style interactive Terminal User Interface to select namespaces, pods, and explore/view files interactively:
+```bash
+pulsaar tui
+```
+
 ### Manage Pod Denylists
 Explicitly block specific directories (e.g. secret files) on a pod from the CLI:
 ```bash
