@@ -58,7 +58,7 @@ func runTUI(cmd *cobra.Command, args []string) error {
 	statusBar.SetText("[cyan][Tab] [white]Switch Panel  [cyan][Enter] [white]Select/Open  [cyan][Backspace] [white]Go Back  [cyan][V] [white]View File  [cyan][R] [white]Refresh")
 
 	// Global State
-	var currentPath string = "/"
+	var currentPath = "/"
 	var currentConnClose func()
 	var client api.PulsaarAgentClient
 
@@ -246,16 +246,16 @@ func runTUI(cmd *cobra.Command, args []string) error {
 	// Switch Panel Handling (Tab key)
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyTab {
-			focused := app.GetFocus()
-			if focused == nsList {
+			switch app.GetFocus() {
+			case nsList:
 				app.SetFocus(podList)
-			} else if focused == podList {
+			case podList:
 				if client != nil {
 					app.SetFocus(fileTable)
 				} else {
 					app.SetFocus(nsList)
 				}
-			} else if focused == fileTable {
+			case fileTable:
 				app.SetFocus(nsList)
 			}
 			return nil
