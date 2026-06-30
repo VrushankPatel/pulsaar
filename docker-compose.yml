@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # 1. Central Audit Aggregator
+  # Receives secure audit logs from agents and stores/streams them.
+  aggregator:
+    image: ghcr.io/vrushankpatel/pulsaar-aggregator:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.aggregator
+    ports:
+      - "${PULSAAR_AGGREGATOR_PORT:-8080}:8080"
+    environment:
+      - PORT=8080
+      - LOG_LEVEL=${PULSAAR_LOG_LEVEL:-info}
+    volumes:
+      - ./audit_logs:/var/log/pulsaar
+    restart: unless-stopped
+
+  # 2. Pulsaar gRPC Agent
+  # Runs on the target pod/container to expose read-only file APIs securely.
+  agent:
+    image: ghcr.io/vrushankpatel/pulsaar-agent:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    ports:
+      - "${PULSAAR_AGENT_PORT:-9000}:9000"
+    environment:
+      - PULSAAR_ALLOWED_ROOTS=${PULSAAR_ALLOWED_ROOTS:-/}
+      - PULSAAR_DENIED_PATHS=${PULSAAR_DENIED_PATHS:-}
+      - PULSAAR_RATE_LIMIT=${PULSAAR_RATE_LIMIT:-100}
+      - PULSAAR_TLS_CERT=${PULSAAR_TLS_CERT:-/certs/tls.crt}
+      - PULSAAR_TLS_KEY=${PULSAAR_TLS_KEY:-/certs/tls.key}
+      - AUDIT_LOG_URL=http://aggregator:8080/audit
+    volumes:
+      - ${PULSAAR_HOST_ROOT:-/}:/host:ro
+      - ./certs:/certs
+    depends_on:
+      - aggregator
+    restart: unless-stopped
+
+  # 3. Admission Webhook
+  # Dynamically injects sidecar agents or validates access on pod creation.
+  webhook:
+    image: ghcr.io/vrushankpatel/pulsaar-webhook:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.webhook
+    ports:
+      - "${PULSAAR_WEBHOOK_PORT:-8443}:8443"
+    environment:
+      - PORT=8443
+      - PULSAAR_AGENT_IMAGE=${PULSAAR_AGENT_IMAGE:-ghcr.io/vrushankpatel/pulsaar-agent:latest}
+    volumes:
+      - ./certs:/certs
+    restart: unless-stopped

@@ -27,7 +27,10 @@ jobs:
         with:
           go-version: '1.25'
       - name: Tidy modules
-        run: go mod tidy
+        run: |
+          go get github.com/rivo/tview@latest
+          go get github.com/gdamore/tcell/v2@latest
+          go mod tidy
       - name: Run tests
         run: go test -coverprofile=coverage.out ./...
       - uses: codecov/codecov-action@v3
