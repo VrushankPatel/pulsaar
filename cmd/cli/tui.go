@@ -43,7 +43,7 @@ func runTUI(cmd *cobra.Command, args []string) error {
 		SetTextAlign(tview.AlignCenter).
 		SetText(`[purple]____        _
 |  _ \ _   _| |___  __ _  __ _ _ __
-| |_) | | | | / __|/ _` |/ _` | '__|
+| |_) | | | | / __|/ _' |/ _' | '__|
 |  __/| |_| | \__ \ (_| | (_| | |
 |_|    \__,_|_|___/\__,_|\__,_|_| [cyan]POD EXPLORER
 [white]Use Arrow Keys / Tab / Enter to navigate. [purple]Ctrl+C [white]to Exit.`)
