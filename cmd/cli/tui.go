@@ -3,10 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"path/filepath"
-	"strings"
-	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -49,20 +46,18 @@ func runTUI(cmd *cobra.Command, args []string) error {
 [white]Use Arrow Keys / Tab / Enter to navigate. [purple]Ctrl+C [white]to Exit.`)
 
 	nsList := tview.NewList().ShowSecondaryText(false)
-	nsList.SetBorder(true).SetTitle("Namespaces").SetTitleColor(tcell.ColorCyan)
+	nsList.SetBorder(true).SetTitle("Namespaces").SetTitleColor(tcell.GetColor("cyan"))
 
 	podList := tview.NewList().ShowSecondaryText(false)
-	podList.SetBorder(true).SetTitle("Pods").SetTitleColor(tcell.ColorCyan)
+	podList.SetBorder(true).SetTitle("Pods").SetTitleColor(tcell.GetColor("cyan"))
 
 	fileTable := tview.NewTable().SetSelectable(true, false)
-	fileTable.SetBorder(true).SetTitle("Files").SetTitleColor(tcell.ColorPurple)
+	fileTable.SetBorder(true).SetTitle("Files").SetTitleColor(tcell.GetColor("purple"))
 
 	statusBar := tview.NewTextView().SetDynamicColors(true)
 	statusBar.SetText("[cyan][Tab] [white]Switch Panel  [cyan][Enter] [white]Select/Open  [cyan][Backspace] [white]Go Back  [cyan][V] [white]View File  [cyan][R] [white]Refresh")
 
 	// Global State
-	var currentNamespace string
-	var currentPod string
 	var currentPath string = "/"
 	var currentConnClose func()
 	var client api.PulsaarAgentClient
@@ -92,7 +87,7 @@ func runTUI(cmd *cobra.Command, args []string) error {
 		// Headers
 		headers := []string{"Name", "Size", "Type/Mode", "ModTime"}
 		for col, h := range headers {
-			cell := tview.NewTableCell(h).SetTextColor(tcell.ColorCyan).SetSelectable(false)
+			cell := tview.NewTableCell(h).SetTextColor(tcell.GetColor("cyan")).SetSelectable(false)
 			fileTable.SetCell(0, col, cell)
 		}
 
@@ -102,7 +97,7 @@ func runTUI(cmd *cobra.Command, args []string) error {
 		})
 		if err != nil {
 			errCell := tview.NewTableCell(fmt.Sprintf("Error listing directory: %v", err)).
-				SetTextColor(tcell.ColorRed).
+				SetTextColor(tcell.GetColor("red")).
 				SetSelectable(false)
 			fileTable.SetCell(1, 0, errCell)
 			return
@@ -111,7 +106,7 @@ func runTUI(cmd *cobra.Command, args []string) error {
 		// Show special parent directory row if not at root
 		rowOffset := 1
 		if currentPath != "/" && currentPath != "." {
-			parentCell := tview.NewTableCell("..").SetTextColor(tcell.ColorPurple)
+			parentCell := tview.NewTableCell("..").SetTextColor(tcell.GetColor("purple"))
 			fileTable.SetCell(rowOffset, 0, parentCell)
 			fileTable.SetCell(rowOffset, 1, tview.NewTableCell("-"))
 			fileTable.SetCell(rowOffset, 2, tview.NewTableCell("dir"))
@@ -121,10 +116,10 @@ func runTUI(cmd *cobra.Command, args []string) error {
 
 		for idx, entry := range resp.Entries {
 			row := idx + rowOffset
-			nameColor := tcell.ColorWhite
+			nameColor := tcell.GetColor("white")
 			typeStr := "file"
 			if entry.IsDir {
-				nameColor = tcell.ColorPurple
+				nameColor = tcell.GetColor("purple")
 				typeStr = "dir"
 			}
 			fileTable.SetCell(row, 0, tview.NewTableCell(entry.Name).SetTextColor(nameColor))
@@ -171,7 +166,7 @@ func runTUI(cmd *cobra.Command, args []string) error {
 			SetText(string(resp.Data))
 		viewer.SetBorder(true).
 			SetTitle(fmt.Sprintf(" Viewing: %s ", filePath)).
-			SetTitleColor(tcell.ColorCyan)
+			SetTitleColor(tcell.GetColor("cyan"))
 
 		viewer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			if event.Key() == tcell.KeyEscape || event.Rune() == 'q' {
@@ -197,8 +192,6 @@ func runTUI(cmd *cobra.Command, args []string) error {
 		for _, pod := range pods.Items {
 			podName := pod.Name
 			podList.AddItem(podName, "", 0, func() {
-				currentPod = podName
-				currentNamespace = ns
 				currentPath = "/"
 
 				// Cleanup old connection
