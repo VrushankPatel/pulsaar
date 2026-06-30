@@ -3,9 +3,9 @@ entries:
   pulsaar:
   - apiVersion: v2
     appVersion: v0.1.0
-    created: "2026-06-30T03:47:20.599127381Z"
+    created: "2026-06-30T03:49:48.142806372Z"
     description: A Helm chart for Pulsaar webhook deployment
-    digest: 1ff68feff14103f4d330797dc68a7e3e1c4c611b7aad96548c72a65c297fd0a8
+    digest: 528b1f319e2ecc80dd3931e3c38086671a7a5c951cb4976efbbbd45b25d52d86
     home: https://github.com/VrushankPatel/pulsaar
     keywords:
     - kubernetes
@@ -22,4 +22,4 @@ entries:
     urls:
     - https://VrushankPatel.github.io/pulsaar/pulsaar-0.1.0.tgz
     version: 0.1.0
-generated: "2026-06-30T03:47:20.598429347Z"
+generated: "2026-06-30T03:49:48.142137858Z"
