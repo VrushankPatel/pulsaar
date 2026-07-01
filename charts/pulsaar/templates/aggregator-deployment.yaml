@@ -16,6 +16,7 @@ spec:
       labels:
         {{- include "pulsaar.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: aggregator
+        pulsaar.io/webhook: "disabled"
       {{- if .Values.monitoring.enabled }}
       annotations:
         "prometheus.io/scrape": {{ index .Values.monitoring.prometheus.annotations "prometheus.io/scrape" | quote }}

@@ -13,6 +13,7 @@ spec:
     metadata:
       labels:
         {{- include "pulsaar.selectorLabels" . | nindent 8 }}
+        pulsaar.io/webhook: "disabled"
       {{- if .Values.monitoring.enabled }}
       annotations:
         "prometheus.io/scrape": {{ index .Values.monitoring.prometheus.annotations "prometheus.io/scrape" | quote }}

@@ -12,6 +12,10 @@ webhooks:
       namespace: {{ .Release.Namespace }}
       path: /mutate
     caBundle: {{ include "pulsaar.webhook.caBundle" . | b64enc }}
+  objectSelector:
+    matchExpressions:
+      - key: pulsaar.io/webhook
+        operator: DoesNotExist
   rules:
   - operations: ["CREATE"]
     apiGroups: [""]
