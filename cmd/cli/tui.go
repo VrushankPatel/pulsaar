@@ -34,25 +34,94 @@ func runTUI(cmd *cobra.Command, args []string) error {
 
 	app := tview.NewApplication()
 
+	// Theme Configuration
+	isDarkMode := true
+
+	getDirColor := func() tcell.Color {
+		if isDarkMode {
+			return tcell.GetColor("#9cdcfe") // VS Code light blue
+		}
+		return tcell.GetColor("#0052cc") // VS Code deep blue
+	}
+
+	getFileColor := func() tcell.Color {
+		if isDarkMode {
+			return tcell.GetColor("#d4d4d4") // light gray
+		}
+		return tcell.GetColor("#333333") // dark gray
+	}
+
+	getHeaderColor := func() tcell.Color {
+		if isDarkMode {
+			return tcell.GetColor("#4ec9b0") // teal
+		}
+		return tcell.GetColor("#008080") // dark teal
+	}
+
+	getBorderColor := func() tcell.Color {
+		if isDarkMode {
+			return tcell.GetColor("#3c3c3c")
+		}
+		return tcell.GetColor("#dddddd")
+	}
+
+	applyTheme := func(dark bool) {
+		if dark {
+			tview.Styles.PrimitiveBackgroundColor = tcell.GetColor("#1e1e1e")
+			tview.Styles.ContrastBackgroundColor = tcell.GetColor("#252526")
+			tview.Styles.MoreContrastBackgroundColor = tcell.GetColor("#2d2d2d")
+			tview.Styles.BorderColor = tcell.GetColor("#3c3c3c")
+			tview.Styles.TitleColor = tcell.GetColor("#4ec9b0")
+			tview.Styles.GraphicsColor = tcell.GetColor("#007acc")
+			tview.Styles.PrimaryTextColor = tcell.GetColor("#d4d4d4")
+			tview.Styles.SecondaryTextColor = tcell.GetColor("#9cdcfe")
+		} else {
+			tview.Styles.PrimitiveBackgroundColor = tcell.GetColor("#ffffff")
+			tview.Styles.ContrastBackgroundColor = tcell.GetColor("#f3f3f3")
+			tview.Styles.MoreContrastBackgroundColor = tcell.GetColor("#e4e4e4")
+			tview.Styles.BorderColor = tcell.GetColor("#dddddd")
+			tview.Styles.TitleColor = tcell.GetColor("#000000")
+			tview.Styles.GraphicsColor = tcell.GetColor("#007acc")
+			tview.Styles.PrimaryTextColor = tcell.GetColor("#333333")
+			tview.Styles.SecondaryTextColor = tcell.GetColor("#0052cc")
+		}
+	}
+
+	// Apply initial VS Code Dark Theme
+	applyTheme(isDarkMode)
+
 	// UI Elements
 	header := tview.NewTextView().
 		SetDynamicColors(true).
-		SetTextAlign(tview.AlignCenter).
-		SetText(`[purple]____        _
-|  _ \ _   _| |___  __ _  __ _ _ __
-| |_) | | | | / __|/ _' |/ _' | '__|
-|  __/| |_| | \__ \ (_| | (_| | |
-|_|    \__,_|_|___/\__,_|\__,_|_| [cyan]POD EXPLORER
-[white]Use Arrow Keys / Tab / Enter to navigate. [purple]Ctrl+C [white]to Exit.`)
+		SetTextAlign(tview.AlignCenter)
+
+	updateHeader := func() {
+		textColor := "[white]"
+		if !isDarkMode {
+			textColor = "[black]"
+		}
+		header.SetText(fmt.Sprintf("[purple]◆ PULSAAR KUBERNETES POD EXPLORER ◆\n%sUse Arrow Keys/Tab to navigate. Press [cyan]Ctrl+L[#] to Toggle Theme.", textColor))
+	}
+	updateHeader()
 
 	nsList := tview.NewList().ShowSecondaryText(false)
-	nsList.SetBorder(true).SetTitle("Namespaces").SetTitleColor(tcell.GetColor("cyan"))
+	nsList.SetBorder(true).SetTitle("Namespaces")
 
 	podList := tview.NewList().ShowSecondaryText(false)
-	podList.SetBorder(true).SetTitle("Pods").SetTitleColor(tcell.GetColor("cyan"))
+	podList.SetBorder(true).SetTitle("Pods")
 
 	fileTable := tview.NewTable().SetSelectable(true, false)
-	fileTable.SetBorder(true).SetTitle("Files").SetTitleColor(tcell.GetColor("purple"))
+	fileTable.SetBorder(true).SetTitle("Files")
+
+	applyThemeToWidgets := func() {
+		nsList.SetTitleColor(getHeaderColor())
+		nsList.SetBorderColor(getBorderColor())
+		podList.SetTitleColor(getHeaderColor())
+		podList.SetBorderColor(getBorderColor())
+		fileTable.SetTitleColor(getHeaderColor())
+		fileTable.SetBorderColor(getBorderColor())
+	}
+	applyThemeToWidgets()
 
 	statusBar := tview.NewTextView().SetDynamicColors(true)
 	statusBar.SetText("[cyan][Tab] [white]Switch Panel  [cyan][Enter] [white]Select/Open  [cyan][Backspace] [white]Go Back  [cyan][V] [white]View File  [cyan][R] [white]Refresh")
@@ -68,7 +137,7 @@ func runTUI(cmd *cobra.Command, args []string) error {
 		AddItem(podList, 0, 2, false)
 
 	mainPanel := tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(header, 6, 1, false).
+		AddItem(header, 3, 1, false).
 		AddItem(fileTable, 0, 1, false).
 		AddItem(statusBar, 1, 1, false)
 
@@ -87,7 +156,7 @@ func runTUI(cmd *cobra.Command, args []string) error {
 		// Headers
 		headers := []string{"Name", "Size", "Type/Mode", "ModTime"}
 		for col, h := range headers {
-			cell := tview.NewTableCell(h).SetTextColor(tcell.GetColor("cyan")).SetSelectable(false)
+			cell := tview.NewTableCell(h).SetTextColor(getHeaderColor()).SetSelectable(false)
 			fileTable.SetCell(0, col, cell)
 		}
 
@@ -106,26 +175,26 @@ func runTUI(cmd *cobra.Command, args []string) error {
 		// Show special parent directory row if not at root
 		rowOffset := 1
 		if currentPath != "/" && currentPath != "." {
-			parentCell := tview.NewTableCell("..").SetTextColor(tcell.GetColor("purple"))
+			parentCell := tview.NewTableCell("..").SetTextColor(getDirColor())
 			fileTable.SetCell(rowOffset, 0, parentCell)
-			fileTable.SetCell(rowOffset, 1, tview.NewTableCell("-"))
-			fileTable.SetCell(rowOffset, 2, tview.NewTableCell("dir"))
-			fileTable.SetCell(rowOffset, 3, tview.NewTableCell("-"))
+			fileTable.SetCell(rowOffset, 1, tview.NewTableCell("-").SetTextColor(getFileColor()))
+			fileTable.SetCell(rowOffset, 2, tview.NewTableCell("dir").SetTextColor(getFileColor()))
+			fileTable.SetCell(rowOffset, 3, tview.NewTableCell("-").SetTextColor(getFileColor()))
 			rowOffset++
 		}
 
 		for idx, entry := range resp.Entries {
 			row := idx + rowOffset
-			nameColor := tcell.GetColor("white")
+			nameColor := getFileColor()
 			typeStr := "file"
 			if entry.IsDir {
-				nameColor = tcell.GetColor("purple")
+				nameColor = getDirColor()
 				typeStr = "dir"
 			}
 			fileTable.SetCell(row, 0, tview.NewTableCell(entry.Name).SetTextColor(nameColor))
-			fileTable.SetCell(row, 1, tview.NewTableCell(fmt.Sprintf("%d bytes", entry.SizeBytes)))
-			fileTable.SetCell(row, 2, tview.NewTableCell(typeStr))
-			fileTable.SetCell(row, 3, tview.NewTableCell(entry.Mtime.AsTime().Format("2006-01-02 15:04:05")))
+			fileTable.SetCell(row, 1, tview.NewTableCell(fmt.Sprintf("%d bytes", entry.SizeBytes)).SetTextColor(getFileColor()))
+			fileTable.SetCell(row, 2, tview.NewTableCell(typeStr).SetTextColor(getFileColor()))
+			fileTable.SetCell(row, 3, tview.NewTableCell(entry.Mtime.AsTime().Format("2006-01-02 15:04:05")).SetTextColor(getFileColor()))
 		}
 		fileTable.ScrollToBeginning()
 		fileTable.Select(rowOffset, 0)
@@ -166,7 +235,8 @@ func runTUI(cmd *cobra.Command, args []string) error {
 			SetText(string(resp.Data))
 		viewer.SetBorder(true).
 			SetTitle(fmt.Sprintf(" Viewing: %s ", filePath)).
-			SetTitleColor(tcell.GetColor("cyan"))
+			SetTitleColor(getHeaderColor()).
+			SetBorderColor(getBorderColor())
 
 		viewer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			if event.Key() == tcell.KeyEscape || event.Rune() == 'q' {
@@ -243,8 +313,17 @@ func runTUI(cmd *cobra.Command, args []string) error {
 	nsList.SetCurrentItem(initialIdx)
 	loadPods(initialNamespace)
 
-	// Switch Panel Handling (Tab key)
+	// Global Key Captures (Tab, Ctrl+L Theme Switch)
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyCtrlL {
+			isDarkMode = !isDarkMode
+			applyTheme(isDarkMode)
+			applyThemeToWidgets()
+			updateHeader()
+			refreshFiles()
+			app.Draw()
+			return nil
+		}
 		if event.Key() == tcell.KeyTab {
 			switch app.GetFocus() {
 			case nsList:

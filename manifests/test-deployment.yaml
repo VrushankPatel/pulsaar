@@ -32,6 +32,7 @@ spec:
       mountPath: /app
   - name: pulsaar-agent
     image: vrushankpatel/pulsaar-agent:latest
+    imagePullPolicy: IfNotPresent
     command: ["./agent"]
     workingDir: /root/
     ports:
