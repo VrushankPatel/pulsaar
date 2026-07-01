@@ -21,7 +21,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/emptypb"
-	authenticationv1 "k8s.io/api/authentication/v1"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -158,14 +157,6 @@ func checkUserAccess(namespace, pod string) error {
 		}
 	}
 
-	token := config.BearerToken
-	if token == "" {
-		return &AccessError{
-			Type:    "auth",
-			Message: "RBAC enforcement requires token-based authentication. Ensure you are using a token-based auth method (e.g., not client certs)",
-		}
-	}
-
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return &AccessError{
@@ -175,43 +166,18 @@ func checkUserAccess(namespace, pod string) error {
 		}
 	}
 
-	// TokenReview
-	tr := &authenticationv1.TokenReview{
-		Spec: authenticationv1.TokenReviewSpec{
-			Token: token,
-		},
-	}
-	result, err := clientset.AuthenticationV1().TokenReviews().Create(context.TODO(), tr, metav1.CreateOptions{})
-	if err != nil {
-		return &AccessError{
-			Type:    "auth",
-			Message: "failed to validate authentication token. Check your token and cluster connectivity",
-			Detail:  err.Error(),
-		}
-	}
-	if !result.Status.Authenticated {
-		return &AccessError{
-			Type:    "auth",
-			Message: "token authentication failed. Please verify your token is valid and not expired",
-		}
-	}
-
-	user := result.Status.User.Username
-
-	// SubjectAccessReview
-	sar := &authorizationv1.SubjectAccessReview{
-		Spec: authorizationv1.SubjectAccessReviewSpec{
+	// SelfSubjectAccessReview checks if the calling user has access
+	ssar := &authorizationv1.SelfSubjectAccessReview{
+		Spec: authorizationv1.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &authorizationv1.ResourceAttributes{
 				Namespace: namespace,
 				Verb:      "get",
 				Resource:  "pods",
 				Name:      pod,
 			},
-			User:   user,
-			Groups: result.Status.User.Groups,
 		},
 	}
-	sarResult, err := clientset.AuthorizationV1().SubjectAccessReviews().Create(context.TODO(), sar, metav1.CreateOptions{})
+	ssarResult, err := clientset.AuthorizationV1().SelfSubjectAccessReviews().Create(context.TODO(), ssar, metav1.CreateOptions{})
 	if err != nil {
 		return &AccessError{
 			Type:    "rbac",
@@ -219,7 +185,7 @@ func checkUserAccess(namespace, pod string) error {
 			Detail:  err.Error(),
 		}
 	}
-	if !sarResult.Status.Allowed {
+	if !ssarResult.Status.Allowed {
 		return &AccessError{
 			Type:    "rbac",
 			Message: fmt.Sprintf("access denied to pod %s/%s. Check your RBAC permissions for 'get' verb on pods in namespace %s", namespace, pod, namespace),
