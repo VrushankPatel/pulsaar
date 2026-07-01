@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	tuiCmd.Flags().String("namespace", "default", "Initial namespace")
+	tuiCmd.Flags().StringP("namespace", "n", "default", "Initial namespace")
 }
 
 func runTUI(cmd *cobra.Command, args []string) error {
@@ -29,7 +29,7 @@ func runTUI(cmd *cobra.Command, args []string) error {
 
 	clientset, err := getClientset()
 	if err != nil {
-		return fmt.Errorf("failed to create Kubernetes client: %w", err)
+		return fmt.Errorf("failed to create Kubernetes client: %w. Please ensure a valid Kubernetes config exists at ~/.kube/config or set the KUBECONFIG environment variable (e.g. export KUBECONFIG=/path/to/config)", err)
 	}
 
 	app := tview.NewApplication()
