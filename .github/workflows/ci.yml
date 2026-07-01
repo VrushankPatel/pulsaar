@@ -109,7 +109,23 @@ jobs:
           kind load docker-image vrushankpatel/pulsaar-webhook:latest --name pulsaar-test
       - name: Generate TLS certificates for webhook
         run: |
-          openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=pulsaar-webhook.default.svc"
+          cat <<'EOF' > webhook-cert.cnf
+          [req]
+          distinguished_name = req_distinguished_name
+          x509_extensions = v3_req
+          prompt = no
+
+          [req_distinguished_name]
+          CN = pulsaar-test.default.svc
+
+          [v3_req]
+          subjectAltName = @alt_names
+
+          [alt_names]
+          DNS.1 = pulsaar-test.default.svc
+          DNS.2 = pulsaar-test.default.svc.cluster.local
+          EOF
+          openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -config webhook-cert.cnf -extensions v3_req
           kubectl create secret tls pulsaar-webhook-tls --cert=cert.pem --key=key.pem
       - name: Install Helm chart
         run: |
